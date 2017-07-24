@@ -1,6 +1,6 @@
-//////////////////////////////////////////////////////
-/* This is the starting point of the application
-/////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+/* This is the starting point of the application server
+//////////////////////////////////////////////////////////////
 
 /**
  * Required Express web application framework and created a instance in variable app
@@ -11,7 +11,7 @@ var app 				= express()
 /**
  * Middleware to serve static files in the Public folder
  */
-app.use(express.static(__dirname + '/public'))
+app.use(express.static('public'))
 
 /**
  * Server listneing on port 9000
@@ -20,5 +20,5 @@ app.use(express.static(__dirname + '/public'))
  */
 app.listen(9000, () => {
 	console.log('\x1b[36m','Server listening on port','\x1b[1m', '\x1b[37m', '9000', '\x1b[0m')
-	console.log(' Server Open at : ', '\x1b[33m', '\x1b[1m', 'https://localhost:9000', '\x1b[0m')
+	console.log(' Server Open at : ', '\x1b[33m', '\x1b[1m', 'http://localhost:9000', '\x1b[0m')
 })

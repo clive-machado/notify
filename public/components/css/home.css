@@ -1,0 +1,56 @@
+.header-content {
+	background-image: url('.././img/header.jpg');
+  background-size: cover;
+	min-height: 600px;
+  height: 100%;
+}
+
+.navbar-brand {
+  padding: 0px 0px;
+}
+
+img {
+	height: 55px;
+}
+
+.navbar-brand>img {
+    display: inline-block;
+}
+
+#title{
+	float: right;
+	height: 49px;
+  line-height: 53px;
+  text-align: center;
+}
+
+h1 {
+	font-size: 60px
+}
+
+p{
+	color: white;
+	font-size: 15px;
+	padding-top : 50px;
+	font-weight: 300;
+  color: rgba(255,255,255,.7);
+}
+
+hr {
+  border-color: #F05F40;
+  border-width: 3px;
+  max-width: 50px;
+}
+
+#homeHeading {
+	font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 0;
+  margin-bottom: 0;
+  color : white;
+  padding-top: 100px;
+}
+
+.div-wrap{
+	text-align: center;
+}
