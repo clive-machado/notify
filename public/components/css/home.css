@@ -10,7 +10,9 @@
 }
 
 img {
-	height: 55px;
+	height: 41px;
+  padding-right: 11px;
+  padding-top: 10px;
 }
 
 .navbar-brand>img {

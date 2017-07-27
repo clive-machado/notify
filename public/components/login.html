@@ -1,11 +1,14 @@
 <div class="form">
-<form>
+<form ng-controller="loginApp">
   <div class="form-group">
-    <label for="exampleInputEmail1">Email address</label>
-    <input type="email" class="form-control" placeholder="Email">
+    <label for="exampleInputUsername">User Name</label>
+    <input type="text" class="form-control" ng-model="username" placeholder="UserName">
   </div>
   <div class="form-group">
     <label for="exampleInputPassword1">Password</label>
-    <input type="password" class="form-control" placeholder="Password">
+    <input type="password" class="form-control" ng-model="password" placeholder="Password">
+  </div>
+  <div>
+  	<button type="submit" ng-click="login(username, password)" class="btn btn-success">Login</button>
   </div>
 </div>
