@@ -11,9 +11,9 @@ var streamify 		= require('gulp-streamify')
  * @param  string   	browserify		Name of the task
  * @param  Function 	function      callback
  */
-gulp.task('browserify', () => {	
+gulp.task('browserify', function () {	
 	
-	var indexPath = 'public/components/js/'
+	var indexPath = 'public/'
 	
 	/**
 	 * This function builds a bundle.js file
@@ -27,7 +27,7 @@ gulp.task('browserify', () => {
 	/**
 	 * Watches for code changes
 	 */
-	gulp.watch(indexPath + 'index.js', () => {
+	gulp.watch(indexPath + 'index.js', function () {
 		syncBundle()
 	})
 	syncBundle()
