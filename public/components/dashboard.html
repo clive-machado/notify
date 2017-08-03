@@ -1,6 +1,15 @@
 <div ui-view="navbar"></div>
-<div>
-	<h1>
-		You have logged in. Welcome!
-	</h1>
+<div class="text-center">
+	<h2 ng-controller="dashboard">{{ title | uppercase }}</h2>
+	<input type="text" name="addTask" ng-model="inputText"><button ng-click="addTask()">Add</button>
+	<!-- <ul>
+		<li ng-repeat="arr in array">
+			<span>
+				<input id="checkBox" type="checkbox" name="taskCheckbox" ng-checked="expression">
+				{{ arr.task }} 
+				<button ng-click="updateTask()">Update</button>
+			</span>
+		</li>
+	</ul> -->
+	<hr>
 </div>

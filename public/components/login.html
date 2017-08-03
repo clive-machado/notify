@@ -10,6 +10,10 @@
     <input type="password" class="form-control" ng-model="password" placeholder="Password">
   </div>
   <div>
-  	<button type="submit" ng-click="login(username, password)" class="btn btn-success">Login</button>
+    <button type="submit" ng-click="login(username, password)" class="btn btn-success">Login</button>
   </div>
+</form>
+<div ng-controller="dashboard">
+  <p id="error" class="text-center">{{ loginError }}</p>
+</div>
 </div>
