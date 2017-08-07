@@ -10,7 +10,7 @@ module.exports = function(app) {
 		}
 		$scope.navButtonTwo = 'Register'
 		$scope.navOne = false
-		$scope.navTwo = true	
+		$scope.navTwo = true
 		$rootScope.auth
 	}])
 }

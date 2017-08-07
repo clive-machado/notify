@@ -107154,6 +107154,7 @@ module.exports = function(app) {
 	app.controller('dashboard', [ '$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
 		$scope.navOne = true
 		$scope.navTwo = false	
+
 		$scope.navButtonLogout = 'Logout'	
 		$scope.title = 'Notify'
 		$scope.loginError = "Can\'t you sign in yet, numb nuts? ¯\\_(ツ)_/¯"
@@ -107185,7 +107186,7 @@ module.exports = function (app) {
           }
         }
       }
-      request(opt, function (err, res, body){
+      request(opt, function (err, res, body){     
         if (typeof body == "string"){
           body = JSON.parse(body)
           if(body.error_message)
@@ -107298,7 +107299,9 @@ module.exports = function(app) {
 		}
 		$scope.navButtonTwo = 'Register'
 		$scope.navOne = false
-		$scope.navTwo = true	
+		$scope.navTwo = true
+    $rootScope.but = false
+
 		$rootScope.auth
 	}])
 }

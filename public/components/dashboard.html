@@ -1,8 +1,10 @@
 <div ui-view="navbar"></div>
 <div class="text-center">
 	<h2 ng-controller="dashboard">{{ title | uppercase }}</h2>
-	<input type="text" name="addTask" ng-model="inputText"><button ng-click="addTask()">Add</button>
-	<!-- <ul>
+	<input type="text" name="addTask" ng-model="inputText"> <br> <br>
+	<button class="btn btn-success" ng-click="addTask()">Add</button>
+	<hr>
+	<ul>
 		<li ng-repeat="arr in array">
 			<span>
 				<input id="checkBox" type="checkbox" name="taskCheckbox" ng-checked="expression">
@@ -10,6 +12,6 @@
 				<button ng-click="updateTask()">Update</button>
 			</span>
 		</li>
-	</ul> -->
+	</ul>
 	<hr>
 </div>

@@ -19,12 +19,13 @@ module.exports = function (app) {
           }
         }
       }
-      request(opt, function (err, res, body){
+      request(opt, function (err, res, body){     
         if (typeof body == "string"){
           body = JSON.parse(body)
           if(body.error_message)
             alert("Couldn't sign you in")
           if(body.application_user){  
+            console.log(body)
             $rootScope.auth = body.application_user.authtoken
             $state.go('dashboard')
           }
