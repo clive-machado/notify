@@ -61,7 +61,7 @@ var state = {
 		}
 	},
 	dashboard : {
-		url : '/dashboard',
+		url : '/Dashboard',
 		views: { 
 			'' : 
 			{
