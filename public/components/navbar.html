@@ -5,11 +5,14 @@
     </a>
   </div>
   <ul class="nav navbar-nav navbar-right">
-    <li class="">
-      <a href="#{{login}}">{{login}}</a>
+    <li>
+      <a ng-hide="navOne" href="#{{navButtonOne}}">{{navButtonOne}}</a>
     </li>
-    <li class="">
-      <a href="#{{register}}">{{register}}</a> 
+    <li>
+      <a ng-hide="navOne" href="#{{navButtonTwo}}">{{navButtonTwo}}</a> 
+    </li>
+    <li>
+      <a ng-hide="navTwo" href="" ng-click="logout()">{{navButtonLogout}}</a>
     </li>
   </ul>
 </div>

@@ -1,17 +1,10 @@
 module.exports = function(app) {
-	app.run(['$rootScope', main])
+	app.run(['$rootScope', '$state', main])
 }
 
-function main ($rootScope) {
-	$rootScope.$on('$stateChangeStart', isAuth)
-	console.log('asdasdas')
-}
-
-function isAuth(event, toState) {
-	console.log(event)
-	console.log(toState)
-	if(toState.views.data.requiredLogin)
-	{
-		event.preventDefault()
-	}
+function main ($rootScope, $state) {
+	$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
+		if(toState.views.data.requiredLogin && angular.isUndefined($rootScope.auth))
+			event.preventDefault()
+	})
 }

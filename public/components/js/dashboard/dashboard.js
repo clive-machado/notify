@@ -1,8 +1,13 @@
 module.exports = function(app) {
-	app.controller('dashboard', function ($scope) {
-		$scope.login = 'Register'	
-		$scope.register = 'Logout'
+	app.controller('dashboard', [ '$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+		$scope.navOne = true
+		$scope.navTwo = false	
+		$scope.navButtonLogout = 'Logout'	
 		$scope.title = 'Notify'
 		$scope.loginError = "Can\'t you sign in yet, numb nuts? ¯\\_(ツ)_/¯"
-	})
+		$scope.logout = function() {
+			delete $rootScope.auth
+			$state.go('login')
+		}
+	}])
 }

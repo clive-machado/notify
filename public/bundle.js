@@ -107151,49 +107151,56 @@ module.exports = Request
 arguments[4][160][0].apply(exports,arguments)
 },{"buffer":49,"dup":160}],351:[function(require,module,exports){
 module.exports = function(app) {
-	app.controller('dashboard', function ($scope) {
-		$scope.login = 'Register'	
-		$scope.register = 'Logout'
+	app.controller('dashboard', [ '$scope', '$state', '$rootScope', function ($scope, $state, $rootScope) {
+		$scope.navOne = true
+		$scope.navTwo = false	
+		$scope.navButtonLogout = 'Logout'	
 		$scope.title = 'Notify'
 		$scope.loginError = "Can\'t you sign in yet, numb nuts? ¯\\_(ツ)_/¯"
-	})
+		$scope.logout = function() {
+			delete $rootScope.auth
+			$state.go('login')
+		}
+	}])
 }
 },{}],352:[function(require,module,exports){
 var request 						= require('request')
 
 module.exports = function (app) {
-	/**
- * Login application controller for login button click	
- */
-app.controller('loginApp', ['$scope', '$state', '$rootScope',($scope, $state, $rootScope, loginService) => {		
-		$scope.login = function (uname, pass){
-	    var opt = {
-	    	url : "https://api.built.io/v1/application/users/login",
-	    	method : "post",
-	    	headers : { 
-	    		'application_api_key' : 'bltf3d1aceb32d4fb7a',
-	    		'content-type' : 'application/json'
-	    	},
-	    	form : {
-	    		"application_user": {
-	    			"username" : uname,
-	    			"password" : pass
-	  			}
-	    	}
-	    }
-			request(opt, function (err, res, body){
-				if (typeof body == "string")
-	        body = JSON.parse(body)
-	      	if(body.error_message)
-	      		alert("Couldn't sign you in")
-	      	if(body.application_user){	
-	      		$rootScope.auth = body.application_user.authtoken
-	      		$state.go('dashboard')
-	      	}
-			})
-		}
+	app.controller('loginApp', ['$scope', '$state', '$rootScope', function($scope, $state, $rootScope, loginService) {		
+    $scope.username
+    $scope.password
+    $scope.login = function (uname, pass){
+      var opt = {
+        url : "https://api.built.io/v1/application/users/login",
+        method : "post",
+        headers : { 
+          'application_api_key' : 'bltf3d1aceb32d4fb7a',
+          'content-type' : 'application/json'
+        },
+        form : {
+          "application_user": {
+            "username" : uname,
+            "password" : pass
+          }
+        }
+      }
+      request(opt, function (err, res, body){
+        if (typeof body == "string"){
+          body = JSON.parse(body)
+          if(body.error_message)
+            alert("Couldn't sign you in")
+          if(body.application_user){  
+            $rootScope.auth = body.application_user.authtoken
+            $state.go('dashboard')
+          }
+        }
+      })
+    }
 	}])
 }
+
+
 },{"request":198}],353:[function(require,module,exports){
 module.exports = function (app) {
 	app.config(states)
@@ -107280,11 +107287,14 @@ var state = {
 
 },{}],354:[function(require,module,exports){
 module.exports = function(app) {
-	app.controller('mainApp', ['$scope', function ($scope) {
+	app.controller('mainApp', ['$scope', '$rootScope', function ($scope, $rootScope) {
 		$scope.homeHeading = "Welcome to the Gaurdian of the Notes"
 		$scope.bannerline = "We are from the Galaxy Galafray our services will help you build things your slimy little brain forgets. So go ahead and Sign In." 
-		$scope.login = 'Login'
-		$scope.register = 'Register'
+		$scope.navButtonOne = 'Login'
+		$scope.navButtonTwo = 'Register'
+		$scope.navOne = false
+		$scope.navTwo = true	
+		$rootScope.auth
 	}])
 }
 },{}],355:[function(require,module,exports){
@@ -107323,21 +107333,13 @@ controller(app)
 run(app)
 },{"./components/js/dashboard/dashboard.js":351,"./components/js/login/login.js":352,"./config.js":353,"./controller.js":354,"./run.js":356,"angular":186,"angular-ui-router":184}],356:[function(require,module,exports){
 module.exports = function(app) {
-	app.run(['$rootScope', main])
+	app.run(['$rootScope', '$state', main])
 }
 
-function main ($rootScope) {
-	$rootScope.$on('$stateChangeStart', isAuth)
-	console.log('asdasdas')
-}
-
-function isAuth(event, toState) {
-	console.log(event)
-	console.log(toState)
-	if(toState.views.data.requiredLogin)
-	{
-		event.preventDefault()
-		$state.go('login')
-	}
+function main ($rootScope, $state) {
+	$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
+		if(toState.views.data.requiredLogin && angular.isUndefined($rootScope.auth))
+			event.preventDefault()
+	})
 }
 },{}]},{},[355]);
