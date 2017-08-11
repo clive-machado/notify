@@ -7,10 +7,12 @@ module.exports = function(app) {
 				return 'Login'
 			else
 				return 'Dashboard'			
-		}
+		}		
+
 		$scope.navButtonTwo = 'Register'
+		$scope.loggedInAs = true
 		$scope.navOne = false
 		$scope.navTwo = true
-		$rootScope.auth
+		$rootScope.auth	
 	}])
 }

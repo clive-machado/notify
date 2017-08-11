@@ -72,6 +72,11 @@ var state = {
 				templateUrl : '/components/navbar.html',
 				controller : 'dashboard' 
 			},
+			'task@dashboard' : 
+			{
+				templateUrl : '/components/tasks.html',
+				controller : 'task' 
+			},
 			data : {
 				requiredLogin : true
 			}	

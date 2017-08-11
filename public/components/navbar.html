@@ -12,6 +12,9 @@
       <a ng-hide="navOne" href="#{{navButtonTwo}}">{{navButtonTwo}}</a> 
     </li>
     <li>
+      <a ng-hide="loggedInAs" href="">{{ email }}</a>
+    </li>
+    <li>
       <a ng-hide="navTwo" href="" ng-click="logout()">{{navButtonLogout}}</a>
     </li>
   </ul>

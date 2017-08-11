@@ -1,10 +1,10 @@
 module.exports = function(app) {
-	app.run(['$rootScope', '$state', main])
-}
-
-function main ($rootScope, $state) {
-	$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
-		if(toState.views.data.requiredLogin && angular.isUndefined($rootScope.auth))
-			event.preventDefault()
-	})
+	app.run(['$rootScope', '$state', 'getFactory', '$cookies', function ($rootScope, $state, getFactory, $cookies) {		
+		$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
+			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth')))
+				event.preventDefault()
+			if(!angular.isUndefined($cookies.get('auth'))) 
+				getFactory.tasks()
+		})
+	}])
 }

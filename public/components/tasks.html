@@ -1,0 +1,9 @@
+<div ng-controller="task"> 
+	<input type="text" name="addTask" ng-model="inputText"> <br> <br>
+	<button class="btn btn-success" ng-click="add(inputText)">Add</button>
+	<a href="#" ng-hide="button">{{ buttons.edit }}</a> 
+	<a href="#" ng-hide="button">{{ buttons.delete }}</a>  
+	<hr>	
+	<ul repeat>
+	</ul>
+</div>

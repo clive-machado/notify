@@ -1,17 +1,8 @@
 <div ui-view="navbar"></div>
-<div class="text-center">
-	<h2 ng-controller="dashboard">{{ title | uppercase }}</h2>
-	<input type="text" name="addTask" ng-model="inputText"> <br> <br>
-	<button class="btn btn-success" ng-click="addTask()">Add</button>
-	<hr>
-	<ul>
-		<li ng-repeat="arr in array">
-			<span>
-				<input id="checkBox" type="checkbox" name="taskCheckbox" ng-checked="expression">
-				{{ arr.task }} 
-				<button ng-click="updateTask()">Update</button>
-			</span>
-		</li>
-	</ul>
+<div class="text-center" ng-controller="dashboard">
+  <a ng-hide="loggedInAs" href=""> Welcome {{ fname }} {{ lname }}</a>
+	<h2>{{ title | uppercase }}</h2>
+	<div ui-view="task">
+	</div>
 	<hr>
 </div>

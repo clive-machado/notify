@@ -1,0 +1,8 @@
+<li ng-repeat="arr in array">
+	<span>
+		<input id="checkBox" type="checkbox" name="taskCheckbox" ng-checked="{{arr.status}}">
+	</span>
+	<span>	
+		{{ arr.task_text }}	
+	</span>
+</li>
