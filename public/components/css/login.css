@@ -1,5 +1,6 @@
 .form { 
   width: 500px;
+  height: 510px;
   margin: 0 auto;
 }
 
@@ -7,3 +8,15 @@
 	color : #ff5050;
 }
 
+.spinning {
+	animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
+}

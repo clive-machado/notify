@@ -1,8 +1,12 @@
+html, body {
+  height: 100%;
+  background-color: #fcfffe;
+}
+
 .header-content {
 	background-image: url('.././img/header.jpg');
   background-size: cover;
-	min-height: 600px;
-  height: 100%;
+	min-height: 560px;
 }
 
 .navbar-brand {
@@ -55,4 +59,40 @@ hr {
 
 .div-wrap{
 	text-align: center;
+}
+
+input.form-control {
+  background-color: solid ghostwhite;
+  border-radius: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+input.form-control:focus {
+  outline: 3px solid #4ed1db;
+  border-radius: 0;
+}
+
+button.btn {
+  transition-duration: 0.5s;
+  border-radius: 7px;
+  /*background-color: lightgreen;*/
+}
+
+button.btn:hover {
+  background-color: darkgreen;
+  /*box-shadow: 1px 1px 20px #ADD8E6;*/
+  /*transform: scale(1.1);*/
+}
+
+/*Brand Title*/
+#title {
+  color: #3a9fe5;
+  transition-duration: 0.5s;
+}
+
+#title:hover {
+  color: 
 }

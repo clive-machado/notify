@@ -31906,7 +31906,7 @@ module.exports.restfullService = function (url, method, headers, data) {
 		})
 	})
 }
-},{"request":202}],185:[function(require,module,exports){
+},{"request":203}],185:[function(require,module,exports){
 var ArrKey = []
 var ArrValue = [] 
 
@@ -78231,6 +78231,661 @@ function populateMaps (extensions, types) {
 }
 
 },{"mime-db":195,"path":127}],197:[function(require,module,exports){
+/*
+ *
+ * https://github.com/fatlinesofcode/ngDraggable
+ */
+angular.module("ngDraggable", [])
+    .service('ngDraggable', [function() {
+
+
+        var scope = this;
+        scope.inputEvent = function(event) {
+            if (angular.isDefined(event.touches)) {
+                return event.touches[0];
+            }
+            //Checking both is not redundent. If only check if touches isDefined, angularjs isDefnied will return error and stop the remaining scripty if event.originalEvent is not defined.
+            else if (angular.isDefined(event.originalEvent) && angular.isDefined(event.originalEvent.touches)) {
+                return event.originalEvent.touches[0];
+            }
+            return event;
+        };
+
+    }])
+    .directive('ngDrag', ['$rootScope', '$parse', '$document', '$window', 'ngDraggable', function ($rootScope, $parse, $document, $window, ngDraggable) {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                scope.value = attrs.ngDrag;
+                var offset,_centerAnchor=false,_mx,_my,_tx,_ty,_mrx,_mry;
+                var _hasTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+                var _pressEvents = 'touchstart mousedown';
+                var _moveEvents = 'touchmove mousemove';
+                var _releaseEvents = 'touchend mouseup';
+                var _dragHandle;
+
+                // to identify the element in order to prevent getting superflous events when a single element has both drag and drop directives on it.
+                var _myid = scope.$id;
+                var _data = null;
+
+                var _dragOffset = null;
+
+                var _dragEnabled = false;
+
+                var _pressTimer = null;
+
+                var onDragStartCallback = $parse(attrs.ngDragStart) || null;
+                var onDragStopCallback = $parse(attrs.ngDragStop) || null;
+                var onDragSuccessCallback = $parse(attrs.ngDragSuccess) || null;
+                var allowTransform = angular.isDefined(attrs.allowTransform) ? scope.$eval(attrs.allowTransform) : true;
+
+                var getDragData = $parse(attrs.ngDragData);
+
+                // deregistration function for mouse move events in $rootScope triggered by jqLite trigger handler
+                var _deregisterRootMoveListener = angular.noop;
+
+                var initialize = function () {
+                    element.attr('draggable', 'false'); // prevent native drag
+                    // check to see if drag handle(s) was specified
+                    // if querySelectorAll is available, we use this instead of find
+                    // as JQLite find is limited to tagnames
+                    if (element[0].querySelectorAll) {
+                        var dragHandles = angular.element(element[0].querySelectorAll('[ng-drag-handle]'));
+                    } else {
+                        var dragHandles = element.find('[ng-drag-handle]');
+                    }
+                    if (dragHandles.length) {
+                        _dragHandle = dragHandles;
+                    }
+                    toggleListeners(true);
+                };
+
+                var toggleListeners = function (enable) {
+                    if (!enable)return;
+                    // add listeners.
+
+                    scope.$on('$destroy', onDestroy);
+                    scope.$watch(attrs.ngDrag, onEnableChange);
+                    scope.$watch(attrs.ngCenterAnchor, onCenterAnchor);
+                    // wire up touch events
+                    if (_dragHandle) {
+                        // handle(s) specified, use those to initiate drag
+                        _dragHandle.on(_pressEvents, onpress);
+                    } else {
+                        // no handle(s) specified, use the element as the handle
+                        element.on(_pressEvents, onpress);
+                    }
+                    if(! _hasTouch && element[0].nodeName.toLowerCase() == "img"){
+                        element.on('mousedown', function(){ return false;}); // prevent native drag for images
+                    }
+                };
+                var onDestroy = function (enable) {
+                    toggleListeners(false);
+                };
+                var onEnableChange = function (newVal, oldVal) {
+                    _dragEnabled = (newVal);
+                };
+                var onCenterAnchor = function (newVal, oldVal) {
+                    if(angular.isDefined(newVal))
+                        _centerAnchor = (newVal || 'true');
+                };
+
+                var isClickableElement = function (evt) {
+                    return (
+                        angular.isDefined(angular.element(evt.target).attr("ng-cancel-drag"))
+                    );
+                };
+                /*
+                 * When the element is clicked start the drag behaviour
+                 * On touch devices as a small delay so as not to prevent native window scrolling
+                 */
+                var onpress = function(evt) {
+                    if(! _dragEnabled)return;
+
+                    if (isClickableElement(evt)) {
+                        return;
+                    }
+
+                    if (evt.type == "mousedown" && evt.button != 0) {
+                        // Do not start dragging on right-click
+                        return;
+                    }
+
+                    if(_hasTouch){
+                        cancelPress();
+                        _pressTimer = setTimeout(function(){
+                            cancelPress();
+                            onlongpress(evt);
+                        },100);
+                        $document.on(_moveEvents, cancelPress);
+                        $document.on(_releaseEvents, cancelPress);
+                    }else{
+                        onlongpress(evt);
+                    }
+
+                };
+
+                var cancelPress = function() {
+                    clearTimeout(_pressTimer);
+                    $document.off(_moveEvents, cancelPress);
+                    $document.off(_releaseEvents, cancelPress);
+                };
+
+                var onlongpress = function(evt) {
+                    if(! _dragEnabled)return;
+                    evt.preventDefault();
+
+                    offset = element[0].getBoundingClientRect();
+                    if(allowTransform)
+                        _dragOffset = offset;
+                    else{
+                        _dragOffset = {left:document.body.scrollLeft, top:document.body.scrollTop};
+                    }
+
+
+                    element.centerX = element[0].offsetWidth / 2;
+                    element.centerY = element[0].offsetHeight / 2;
+
+                    _mx = ngDraggable.inputEvent(evt).pageX;//ngDraggable.getEventProp(evt, 'pageX');
+                    _my = ngDraggable.inputEvent(evt).pageY;//ngDraggable.getEventProp(evt, 'pageY');
+                    _mrx = _mx - offset.left;
+                    _mry = _my - offset.top;
+                    if (_centerAnchor) {
+                        _tx = _mx - element.centerX - $window.pageXOffset;
+                        _ty = _my - element.centerY - $window.pageYOffset;
+                    } else {
+                        _tx = _mx - _mrx - $window.pageXOffset;
+                        _ty = _my - _mry - $window.pageYOffset;
+                    }
+
+                    $document.on(_moveEvents, onmove);
+                    $document.on(_releaseEvents, onrelease);
+                    // This event is used to receive manually triggered mouse move events
+                    // jqLite unfortunately only supports triggerHandler(...)
+                    // See http://api.jquery.com/triggerHandler/
+                    // _deregisterRootMoveListener = $rootScope.$on('draggable:_triggerHandlerMove', onmove);
+                    _deregisterRootMoveListener = $rootScope.$on('draggable:_triggerHandlerMove', function(event, origEvent) {
+                        onmove(origEvent);
+                    });
+                };
+
+                var onmove = function (evt) {
+                    if (!_dragEnabled)return;
+                    evt.preventDefault();
+
+                    if (!element.hasClass('dragging')) {
+                        _data = getDragData(scope);
+                        element.addClass('dragging');
+                        $rootScope.$broadcast('draggable:start', {x:_mx, y:_my, tx:_tx, ty:_ty, event:evt, element:element, data:_data});
+
+                        if (onDragStartCallback ){
+                            scope.$apply(function () {
+                                onDragStartCallback(scope, {$data: _data, $event: evt});
+                            });
+                        }
+                    }
+
+                    _mx = ngDraggable.inputEvent(evt).pageX;//ngDraggable.getEventProp(evt, 'pageX');
+                    _my = ngDraggable.inputEvent(evt).pageY;//ngDraggable.getEventProp(evt, 'pageY');
+
+                    if (_centerAnchor) {
+                        _tx = _mx - element.centerX - _dragOffset.left;
+                        _ty = _my - element.centerY - _dragOffset.top;
+                    } else {
+                        _tx = _mx - _mrx - _dragOffset.left;
+                        _ty = _my - _mry - _dragOffset.top;
+                    }
+
+                    moveElement(_tx, _ty);
+
+                    $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset });
+                };
+
+                var onrelease = function(evt) {
+                    if (!_dragEnabled)
+                        return;
+                    evt.preventDefault();
+                    $rootScope.$broadcast('draggable:end', {x:_mx, y:_my, tx:_tx, ty:_ty, event:evt, element:element, data:_data, callback:onDragComplete, uid: _myid});
+                    element.removeClass('dragging');
+                    element.parent().find('.drag-enter').removeClass('drag-enter');
+                    reset();
+                    $document.off(_moveEvents, onmove);
+                    $document.off(_releaseEvents, onrelease);
+
+                    if (onDragStopCallback ){
+                        scope.$apply(function () {
+                            onDragStopCallback(scope, {$data: _data, $event: evt});
+                        });
+                    }
+
+                    _deregisterRootMoveListener();
+                };
+
+                var onDragComplete = function(evt) {
+
+
+                    if (!onDragSuccessCallback )return;
+
+                    scope.$apply(function () {
+                        onDragSuccessCallback(scope, {$data: _data, $event: evt});
+                    });
+                };
+
+                var reset = function() {
+                    if(allowTransform)
+                        element.css({transform:'', 'z-index':'', '-webkit-transform':'', '-ms-transform':''});
+                    else
+                        element.css({'position':'',top:'',left:''});
+                };
+
+                var moveElement = function (x, y) {
+                    if(allowTransform) {
+                        element.css({
+                            transform: 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ' + x + ', ' + y + ', 0, 1)',
+                            'z-index': 99999,
+                            '-webkit-transform': 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ' + x + ', ' + y + ', 0, 1)',
+                            '-ms-transform': 'matrix(1, 0, 0, 1, ' + x + ', ' + y + ')'
+                        });
+                    }else{
+                        element.css({'left':x+'px','top':y+'px', 'position':'fixed'});
+                    }
+                };
+                initialize();
+            }
+        };
+    }])
+
+    .directive('ngDrop', ['$parse', '$timeout', '$window', '$document', 'ngDraggable', function ($parse, $timeout, $window, $document, ngDraggable) {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                scope.value = attrs.ngDrop;
+                scope.isTouching = false;
+
+                var _lastDropTouch=null;
+
+                var _myid = scope.$id;
+
+                var _dropEnabled=false;
+
+                var onDropCallback = $parse(attrs.ngDropSuccess);// || function(){};
+
+                var onDragStartCallback = $parse(attrs.ngDragStart);
+                var onDragStopCallback = $parse(attrs.ngDragStop);
+                var onDragMoveCallback = $parse(attrs.ngDragMove);
+
+                var initialize = function () {
+                    toggleListeners(true);
+                };
+
+                var toggleListeners = function (enable) {
+                    // remove listeners
+
+                    if (!enable)return;
+                    // add listeners.
+                    scope.$watch(attrs.ngDrop, onEnableChange);
+                    scope.$on('$destroy', onDestroy);
+                    scope.$on('draggable:start', onDragStart);
+                    scope.$on('draggable:move', onDragMove);
+                    scope.$on('draggable:end', onDragEnd);
+                };
+
+                var onDestroy = function (enable) {
+                    toggleListeners(false);
+                };
+                var onEnableChange = function (newVal, oldVal) {
+                    _dropEnabled=newVal;
+                };
+                var onDragStart = function(evt, obj) {
+                    if(! _dropEnabled)return;
+                    isTouching(obj.x,obj.y,obj.element);
+
+                    if (attrs.ngDragStart) {
+                        $timeout(function(){
+                            onDragStartCallback(scope, {$data: obj.data, $event: obj});
+                        });
+                    }
+                };
+                var onDragMove = function(evt, obj) {
+                    if(! _dropEnabled)return;
+                    isTouching(obj.x,obj.y,obj.element);
+
+                    if (attrs.ngDragMove) {
+                        $timeout(function(){
+                            onDragMoveCallback(scope, {$data: obj.data, $event: obj});
+                        });
+                    }
+                };
+
+                var onDragEnd = function (evt, obj) {
+
+                    // don't listen to drop events if this is the element being dragged
+                    // only update the styles and return
+                    if (!_dropEnabled || _myid === obj.uid) {
+                        updateDragStyles(false, obj.element);
+                        return;
+                    }
+                    if (isTouching(obj.x, obj.y, obj.element)) {
+                        // call the ngDraggable ngDragSuccess element callback
+                        if(obj.callback){
+                            obj.callback(obj);
+                        }
+
+                        if (attrs.ngDropSuccess) {
+                            $timeout(function(){
+                                onDropCallback(scope, {$data: obj.data, $event: obj, $target: scope.$eval(scope.value)});
+                            });
+                        }
+                    }
+
+                    if (attrs.ngDragStop) {
+                        $timeout(function(){
+                            onDragStopCallback(scope, {$data: obj.data, $event: obj});
+                        });
+                    }
+
+                    updateDragStyles(false, obj.element);
+                };
+
+                var isTouching = function(mouseX, mouseY, dragElement) {
+                    var touching= hitTest(mouseX, mouseY);
+                    scope.isTouching = touching;
+                    if(touching){
+                        _lastDropTouch = element;
+                    }
+                    updateDragStyles(touching, dragElement);
+                    return touching;
+                };
+
+                var updateDragStyles = function(touching, dragElement) {
+                    if(touching){
+                        element.addClass('drag-enter');
+                        dragElement.addClass('drag-over');
+                    }else if(_lastDropTouch == element){
+                        _lastDropTouch=null;
+                        element.removeClass('drag-enter');
+                        dragElement.removeClass('drag-over');
+                    }
+                };
+
+                var hitTest = function(x, y) {
+                    var bounds = element[0].getBoundingClientRect();// ngDraggable.getPrivOffset(element);
+                    x -= $document[0].body.scrollLeft + $document[0].documentElement.scrollLeft;
+                    y -= $document[0].body.scrollTop + $document[0].documentElement.scrollTop;
+                    return  x >= bounds.left
+                        && x <= bounds.right
+                        && y <= bounds.bottom
+                        && y >= bounds.top;
+                };
+
+                initialize();
+            }
+        };
+    }])
+    .directive('ngDragClone', ['$parse', '$timeout', 'ngDraggable', function ($parse, $timeout, ngDraggable) {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                var img, _allowClone=true;
+                var _dragOffset = null;
+                scope.clonedData = {};
+                var initialize = function () {
+
+                    img = element.find('img');
+                    element.attr('draggable', 'false');
+                    img.attr('draggable', 'false');
+                    reset();
+                    toggleListeners(true);
+                };
+
+
+                var toggleListeners = function (enable) {
+                    // remove listeners
+
+                    if (!enable)return;
+                    // add listeners.
+                    scope.$on('draggable:start', onDragStart);
+                    scope.$on('draggable:move', onDragMove);
+                    scope.$on('draggable:end', onDragEnd);
+                    preventContextMenu();
+
+                };
+                var preventContextMenu = function() {
+                    //  element.off('mousedown touchstart touchmove touchend touchcancel', absorbEvent_);
+                    img.off('mousedown touchstart touchmove touchend touchcancel', absorbEvent_);
+                    //  element.on('mousedown touchstart touchmove touchend touchcancel', absorbEvent_);
+                    img.on('mousedown touchstart touchmove touchend touchcancel', absorbEvent_);
+                };
+                var onDragStart = function(evt, obj, elm) {
+                    _allowClone=true;
+                    if(angular.isDefined(obj.data.allowClone)){
+                        _allowClone=obj.data.allowClone;
+                    }
+                    if(_allowClone) {
+                        scope.$apply(function () {
+                            scope.clonedData = obj.data;
+                        });
+                        element.css('width', obj.element[0].offsetWidth);
+                        element.css('height', obj.element[0].offsetHeight);
+
+                        moveElement(obj.tx, obj.ty);
+                    }
+
+                };
+                var onDragMove = function(evt, obj) {
+                    if(_allowClone) {
+
+                        _tx = obj.tx + obj.dragOffset.left;
+                        _ty = obj.ty + obj.dragOffset.top;
+
+                        moveElement(_tx, _ty);
+                    }
+                };
+                var onDragEnd = function(evt, obj) {
+                    //moveElement(obj.tx,obj.ty);
+                    if(_allowClone) {
+                        reset();
+                    }
+                };
+
+                var reset = function() {
+                    element.css({left:0,top:0, position:'fixed', 'z-index':-1, visibility:'hidden'});
+                };
+                var moveElement = function(x,y) {
+                    element.css({
+                        transform: 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, '+x+', '+y+', 0, 1)', 'z-index': 99999, 'visibility': 'visible',
+                        '-webkit-transform': 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, '+x+', '+y+', 0, 1)',
+                        '-ms-transform': 'matrix(1, 0, 0, 1, '+x+', '+y+')'
+                        //,margin: '0'  don't monkey with the margin,
+                    });
+                };
+
+                var absorbEvent_ = function (event) {
+                    var e = event;//.originalEvent;
+                    e.preventDefault && e.preventDefault();
+                    e.stopPropagation && e.stopPropagation();
+                    e.cancelBubble = true;
+                    e.returnValue = false;
+                    return false;
+                };
+
+                initialize();
+            }
+        };
+    }])
+    .directive('ngPreventDrag', ['$parse', '$timeout', function ($parse, $timeout) {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                var initialize = function () {
+
+                    element.attr('draggable', 'false');
+                    toggleListeners(true);
+                };
+
+
+                var toggleListeners = function (enable) {
+                    // remove listeners
+
+                    if (!enable)return;
+                    // add listeners.
+                    element.on('mousedown touchstart touchmove touchend touchcancel', absorbEvent_);
+                };
+
+
+                var absorbEvent_ = function (event) {
+                    var e = event.originalEvent;
+                    e.preventDefault && e.preventDefault();
+                    e.stopPropagation && e.stopPropagation();
+                    e.cancelBubble = true;
+                    e.returnValue = false;
+                    return false;
+                };
+
+                initialize();
+            }
+        };
+    }])
+    .directive('ngCancelDrag', [function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                element.find('*').attr('ng-cancel-drag', 'ng-cancel-drag');
+            }
+        };
+    }])
+    .directive('ngDragScroll', ['$window', '$interval', '$timeout', '$document', '$rootScope', function($window, $interval, $timeout, $document, $rootScope) {
+        return {
+            restrict: 'A',
+            link: function(scope, element, attrs) {
+                var intervalPromise = null;
+                var lastMouseEvent = null;
+
+                var config = {
+                    verticalScroll: attrs.verticalScroll || true,
+                    horizontalScroll: attrs.horizontalScroll || true,
+                    activationDistance: attrs.activationDistance || 75,
+                    scrollDistance: attrs.scrollDistance || 15
+                };
+
+
+                var reqAnimFrame = (function() {
+                    return window.requestAnimationFrame ||
+                        window.webkitRequestAnimationFrame ||
+                        window.mozRequestAnimationFrame ||
+                        window.oRequestAnimationFrame ||
+                        window.msRequestAnimationFrame ||
+                        function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
+                            window.setTimeout(callback, 1000 / 60);
+                        };
+                })();
+
+                var animationIsOn = false;
+                var createInterval = function() {
+                    animationIsOn = true;
+
+                    function nextFrame(callback) {
+                        var args = Array.prototype.slice.call(arguments);
+                        if(animationIsOn) {
+                            reqAnimFrame(function () {
+                                $rootScope.$apply(function () {
+                                    callback.apply(null, args);
+                                    nextFrame(callback);
+                                });
+                            })
+                        }
+                    }
+
+                    nextFrame(function() {
+                        if (!lastMouseEvent) return;
+
+                        var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+                        var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+
+                        var scrollX = 0;
+                        var scrollY = 0;
+
+                        if (config.horizontalScroll) {
+                            // If horizontal scrolling is active.
+                            if (lastMouseEvent.clientX < config.activationDistance) {
+                                // If the mouse is on the left of the viewport within the activation distance.
+                                scrollX = -config.scrollDistance;
+                            }
+                            else if (lastMouseEvent.clientX > viewportWidth - config.activationDistance) {
+                                // If the mouse is on the right of the viewport within the activation distance.
+                                scrollX = config.scrollDistance;
+                            }
+                        }
+
+                        if (config.verticalScroll) {
+                            // If vertical scrolling is active.
+                            if (lastMouseEvent.clientY < config.activationDistance) {
+                                // If the mouse is on the top of the viewport within the activation distance.
+                                scrollY = -config.scrollDistance;
+                            }
+                            else if (lastMouseEvent.clientY > viewportHeight - config.activationDistance) {
+                                // If the mouse is on the bottom of the viewport within the activation distance.
+                                scrollY = config.scrollDistance;
+                            }
+                        }
+
+
+
+                        if (scrollX !== 0 || scrollY !== 0) {
+                            // Record the current scroll position.
+                            var currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft);
+                            var currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop);
+
+                            // Remove the transformation from the element, scroll the window by the scroll distance
+                            // record how far we scrolled, then reapply the element transformation.
+                            var elementTransform = element.css('transform');
+                            element.css('transform', 'initial');
+
+                            $window.scrollBy(scrollX, scrollY);
+
+                            var horizontalScrollAmount = ($window.pageXOffset || $document[0].documentElement.scrollLeft) - currentScrollLeft;
+                            var verticalScrollAmount =  ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop;
+
+                            element.css('transform', elementTransform);
+
+                            lastMouseEvent.pageX += horizontalScrollAmount;
+                            lastMouseEvent.pageY += verticalScrollAmount;
+
+                            $rootScope.$emit('draggable:_triggerHandlerMove', lastMouseEvent);
+                        }
+
+                    });
+                };
+
+                var clearInterval = function() {
+                    animationIsOn = false;
+                };
+
+                scope.$on('draggable:start', function(event, obj) {
+                    // Ignore this event if it's not for this element.
+                    if (obj.element[0] !== element[0]) return;
+
+                    if (!animationIsOn) createInterval();
+                });
+
+                scope.$on('draggable:end', function(event, obj) {
+                    // Ignore this event if it's not for this element.
+                    if (obj.element[0] !== element[0]) return;
+
+                    if (animationIsOn) clearInterval();
+                });
+
+                scope.$on('draggable:move', function(event, obj) {
+                    // Ignore this event if it's not for this element.
+                    if (obj.element[0] !== element[0]) return;
+
+                    lastMouseEvent = obj.event;
+                });
+            }
+        };
+    }]);
+
+},{}],198:[function(require,module,exports){
 'use strict';
 
 var replace = String.prototype.replace;
@@ -78250,7 +78905,7 @@ module.exports = {
     RFC3986: 'RFC3986'
 };
 
-},{}],198:[function(require,module,exports){
+},{}],199:[function(require,module,exports){
 'use strict';
 
 var stringify = require('./stringify');
@@ -78263,7 +78918,7 @@ module.exports = {
     stringify: stringify
 };
 
-},{"./formats":197,"./parse":199,"./stringify":200}],199:[function(require,module,exports){
+},{"./formats":198,"./parse":200,"./stringify":201}],200:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -78432,7 +79087,7 @@ module.exports = function (str, opts) {
     return utils.compact(obj);
 };
 
-},{"./utils":201}],200:[function(require,module,exports){
+},{"./utils":202}],201:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -78641,7 +79296,7 @@ module.exports = function (object, opts) {
     return keys.join(delimiter);
 };
 
-},{"./formats":197,"./utils":201}],201:[function(require,module,exports){
+},{"./formats":198,"./utils":202}],202:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty;
@@ -78825,7 +79480,7 @@ exports.isBuffer = function (obj) {
     return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
 };
 
-},{}],202:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 // Copyright 2010-2012 Mikeal Rogers
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -78983,7 +79638,7 @@ Object.defineProperty(request, 'debug', {
   }
 })
 
-},{"./lib/cookies":204,"./lib/helpers":207,"./request":353,"extend":219}],203:[function(require,module,exports){
+},{"./lib/cookies":205,"./lib/helpers":208,"./request":354,"extend":220}],204:[function(require,module,exports){
 'use strict'
 
 var caseless = require('caseless')
@@ -79153,7 +79808,7 @@ Auth.prototype.onResponse = function (response) {
 
 exports.Auth = Auth
 
-},{"./helpers":207,"caseless":216,"uuid":348}],204:[function(require,module,exports){
+},{"./helpers":208,"caseless":217,"uuid":349}],205:[function(require,module,exports){
 'use strict'
 
 var tough = require('tough-cookie')
@@ -79194,7 +79849,7 @@ exports.jar = function(store) {
   return new RequestJar(store)
 }
 
-},{"tough-cookie":340}],205:[function(require,module,exports){
+},{"tough-cookie":341}],206:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -79277,7 +79932,7 @@ function getProxyFromURI(uri) {
 module.exports = getProxyFromURI
 
 }).call(this,require('_process'))
-},{"_process":134}],206:[function(require,module,exports){
+},{"_process":134}],207:[function(require,module,exports){
 'use strict'
 
 var fs = require('fs')
@@ -79494,7 +80149,7 @@ Har.prototype.options = function (options) {
 
 exports.Har = Har
 
-},{"extend":219,"fs":1,"har-validator":223,"querystring":144}],207:[function(require,module,exports){
+},{"extend":220,"fs":1,"har-validator":224,"querystring":144}],208:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -79564,7 +80219,7 @@ exports.version               = version
 exports.defer                 = defer
 
 }).call(this,require('_process'))
-},{"_process":134,"crypto":59,"json-stringify-safe":336,"safe-buffer":354}],208:[function(require,module,exports){
+},{"_process":134,"crypto":59,"json-stringify-safe":337,"safe-buffer":355}],209:[function(require,module,exports){
 'use strict'
 
 var uuid = require('uuid')
@@ -79679,7 +80334,7 @@ Multipart.prototype.onRequest = function (options) {
 
 exports.Multipart = Multipart
 
-},{"combined-stream":217,"isstream":335,"safe-buffer":354,"uuid":348}],209:[function(require,module,exports){
+},{"combined-stream":218,"isstream":336,"safe-buffer":355,"uuid":349}],210:[function(require,module,exports){
 'use strict'
 
 var url = require('url')
@@ -79829,7 +80484,7 @@ OAuth.prototype.onRequest = function (_oauth) {
 
 exports.OAuth = OAuth
 
-},{"caseless":216,"crypto":59,"oauth-sign":337,"qs":198,"safe-buffer":354,"url":176,"uuid":348}],210:[function(require,module,exports){
+},{"caseless":217,"crypto":59,"oauth-sign":338,"qs":199,"safe-buffer":355,"url":176,"uuid":349}],211:[function(require,module,exports){
 'use strict'
 
 var qs = require('qs')
@@ -79882,7 +80537,7 @@ Querystring.prototype.unescape = querystring.unescape
 
 exports.Querystring = Querystring
 
-},{"qs":198,"querystring":144}],211:[function(require,module,exports){
+},{"qs":199,"querystring":144}],212:[function(require,module,exports){
 'use strict'
 
 var url = require('url')
@@ -80041,7 +80696,7 @@ Redirect.prototype.onResponse = function (response) {
 
 exports.Redirect = Redirect
 
-},{"url":176}],212:[function(require,module,exports){
+},{"url":176}],213:[function(require,module,exports){
 'use strict'
 
 var url = require('url')
@@ -80219,7 +80874,7 @@ Tunnel.defaultProxyHeaderWhiteList = defaultProxyHeaderWhiteList
 Tunnel.defaultProxyHeaderExclusiveList = defaultProxyHeaderExclusiveList
 exports.Tunnel = Tunnel
 
-},{"tunnel-agent":347,"url":176}],213:[function(require,module,exports){
+},{"tunnel-agent":348,"url":176}],214:[function(require,module,exports){
 
 /*!
  *  Copyright 2010 LearnBoost <dev@learnboost.com>
@@ -80433,7 +81088,7 @@ function canonicalizeResource (resource) {
 }
 module.exports.canonicalizeResource = canonicalizeResource
 
-},{"crypto":59,"url":176}],214:[function(require,module,exports){
+},{"crypto":59,"url":176}],215:[function(require,module,exports){
 (function (process,Buffer){
 var aws4 = exports,
     url = require('url'),
@@ -80769,7 +81424,7 @@ aws4.sign = function(request, credentials) {
 }
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./lru":215,"_process":134,"buffer":49,"crypto":59,"querystring":144,"url":176}],215:[function(require,module,exports){
+},{"./lru":216,"_process":134,"buffer":49,"crypto":59,"querystring":144,"url":176}],216:[function(require,module,exports){
 module.exports = function(size) {
   return new LruCache(size)
 }
@@ -80867,7 +81522,7 @@ function DoublyLinkedNode(key, val) {
   this.next = null
 }
 
-},{}],216:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 function Caseless (dict) {
   this.dict = dict || {}
 }
@@ -80936,7 +81591,7 @@ module.exports.httpify = function (resp, headers) {
   return c
 }
 
-},{}],217:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 (function (Buffer){
 var util = require('util');
 var Stream = require('stream').Stream;
@@ -81128,7 +81783,7 @@ CombinedStream.prototype._emitError = function(err) {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"delayed-stream":218,"stream":169,"util":181}],218:[function(require,module,exports){
+},{"../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"delayed-stream":219,"stream":169,"util":181}],219:[function(require,module,exports){
 var Stream = require('stream').Stream;
 var util = require('util');
 
@@ -81237,7 +81892,7 @@ DelayedStream.prototype._checkIfMaxDataSizeExceeded = function() {
   this.emit('error', new Error(message));
 };
 
-},{"stream":169,"util":181}],219:[function(require,module,exports){
+},{"stream":169,"util":181}],220:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -81325,7 +81980,7 @@ module.exports = function extend() {
 	return target;
 };
 
-},{}],220:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 module.exports = ForeverAgent
 ForeverAgent.SSL = ForeverAgentSSL
 
@@ -81465,11 +82120,11 @@ function createConnectionSSL (port, host, options) {
   return tls.connect(options);
 }
 
-},{"http":170,"https":102,"net":1,"tls":1,"util":181}],221:[function(require,module,exports){
+},{"http":170,"https":102,"net":1,"tls":1,"util":181}],222:[function(require,module,exports){
 /* eslint-env browser */
 module.exports = typeof self == 'object' ? self.FormData : window.FormData;
 
-},{}],222:[function(require,module,exports){
+},{}],223:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -81492,7 +82147,7 @@ function HARError(errors) {
 
 HARError.prototype = Error.prototype;
 module.exports = exports['default'];
-},{}],223:[function(require,module,exports){
+},{}],224:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -81625,7 +82280,7 @@ function response(data) {
 function timings(data) {
   return validate('timings', data);
 }
-},{"./error":222,"ajv":224,"har-schema":277}],224:[function(require,module,exports){
+},{"./error":223,"ajv":225,"har-schema":278}],225:[function(require,module,exports){
 'use strict';
 
 var compileSchema = require('./compile')
@@ -82047,7 +82702,7 @@ function Ajv(opts) {
   }
 }
 
-},{"./async":225,"./cache":226,"./compile":230,"./compile/formats":229,"./compile/resolve":231,"./compile/rules":232,"./compile/schema_obj":233,"./compile/util":235,"./compile/validation_error":236,"./keyword":261,"./refs/json-schema-draft-04.json":262,"./v5":264,"co":265,"json-stable-stringify":266}],225:[function(require,module,exports){
+},{"./async":226,"./cache":227,"./compile":231,"./compile/formats":230,"./compile/resolve":232,"./compile/rules":233,"./compile/schema_obj":234,"./compile/util":236,"./compile/validation_error":237,"./keyword":262,"./refs/json-schema-draft-04.json":263,"./v5":265,"co":266,"json-stable-stringify":267}],226:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -82267,7 +82922,7 @@ function compileAsync(schema, callback) {
   }
 }
 
-},{"./compile/util":235}],226:[function(require,module,exports){
+},{"./compile/util":236}],227:[function(require,module,exports){
 'use strict';
 
 
@@ -82295,7 +82950,7 @@ Cache.prototype.clear = function Cache_clear() {
   this._cache = {};
 };
 
-},{}],227:[function(require,module,exports){
+},{}],228:[function(require,module,exports){
 'use strict';
 
 //all requires must be explicit because browserify won't work with dynamic requires
@@ -82325,7 +82980,7 @@ module.exports = {
   validate: require('../dotjs/validate')
 };
 
-},{"../dotjs/_limit":238,"../dotjs/_limitItems":239,"../dotjs/_limitLength":240,"../dotjs/_limitProperties":241,"../dotjs/allOf":242,"../dotjs/anyOf":243,"../dotjs/dependencies":246,"../dotjs/enum":247,"../dotjs/format":248,"../dotjs/items":249,"../dotjs/multipleOf":250,"../dotjs/not":251,"../dotjs/oneOf":252,"../dotjs/pattern":253,"../dotjs/properties":255,"../dotjs/ref":256,"../dotjs/required":257,"../dotjs/uniqueItems":259,"../dotjs/validate":260}],228:[function(require,module,exports){
+},{"../dotjs/_limit":239,"../dotjs/_limitItems":240,"../dotjs/_limitLength":241,"../dotjs/_limitProperties":242,"../dotjs/allOf":243,"../dotjs/anyOf":244,"../dotjs/dependencies":247,"../dotjs/enum":248,"../dotjs/format":249,"../dotjs/items":250,"../dotjs/multipleOf":251,"../dotjs/not":252,"../dotjs/oneOf":253,"../dotjs/pattern":254,"../dotjs/properties":256,"../dotjs/ref":257,"../dotjs/required":258,"../dotjs/uniqueItems":260,"../dotjs/validate":261}],229:[function(require,module,exports){
 'use strict';
 
 /*eslint complexity: 0*/
@@ -82372,7 +83027,7 @@ module.exports = function equal(a, b) {
   return false;
 };
 
-},{}],229:[function(require,module,exports){
+},{}],230:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -82538,7 +83193,7 @@ function compareDateTime(dt1, dt2) {
   return res || compareTime(dt1[1], dt2[1]);
 }
 
-},{"./util":235}],230:[function(require,module,exports){
+},{"./util":236}],231:[function(require,module,exports){
 'use strict';
 
 var resolve = require('./resolve')
@@ -82930,7 +83585,7 @@ function vars(arr, statement) {
   return code;
 }
 
-},{"../async":225,"../dotjs/validate":260,"./equal":228,"./resolve":231,"./util":235,"./validation_error":236,"co":265,"json-stable-stringify":266}],231:[function(require,module,exports){
+},{"../async":226,"../dotjs/validate":261,"./equal":229,"./resolve":232,"./util":236,"./validation_error":237,"co":266,"json-stable-stringify":267}],232:[function(require,module,exports){
 'use strict';
 
 var url = require('url')
@@ -83199,7 +83854,7 @@ function resolveIds(schema) {
   }
 }
 
-},{"./equal":228,"./schema_obj":233,"./util":235,"url":176}],232:[function(require,module,exports){
+},{"./equal":229,"./schema_obj":234,"./util":236,"url":176}],233:[function(require,module,exports){
 'use strict';
 
 var ruleModules = require('./_rules')
@@ -83241,7 +83896,7 @@ module.exports = function rules() {
   return RULES;
 };
 
-},{"./_rules":227,"./util":235}],233:[function(require,module,exports){
+},{"./_rules":228,"./util":236}],234:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -83252,7 +83907,7 @@ function SchemaObject(obj) {
   util.copy(obj, this);
 }
 
-},{"./util":235}],234:[function(require,module,exports){
+},{"./util":236}],235:[function(require,module,exports){
 'use strict';
 
 // https://mathiasbynens.be/notes/javascript-encoding
@@ -83274,7 +83929,7 @@ module.exports = function ucs2length(str) {
   return length;
 };
 
-},{}],235:[function(require,module,exports){
+},{}],236:[function(require,module,exports){
 'use strict';
 
 
@@ -83533,7 +84188,7 @@ function unescapeJsonPointer(str) {
   return str.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-},{"./ucs2length":234,"json-stable-stringify":266}],236:[function(require,module,exports){
+},{"./ucs2length":235,"json-stable-stringify":267}],237:[function(require,module,exports){
 'use strict';
 
 module.exports = ValidationError;
@@ -83549,7 +84204,7 @@ function ValidationError(errors) {
 ValidationError.prototype = Object.create(Error.prototype);
 ValidationError.prototype.constructor = ValidationError;
 
-},{}],237:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 'use strict';
 module.exports = function generate__formatLimit(it, $keyword) {
   var out = ' ';
@@ -83727,7 +84382,7 @@ module.exports = function generate__formatLimit(it, $keyword) {
   return out;
 }
 
-},{}],238:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 'use strict';
 module.exports = function generate__limit(it, $keyword) {
   var out = ' ';
@@ -83853,7 +84508,7 @@ module.exports = function generate__limit(it, $keyword) {
   return out;
 }
 
-},{}],239:[function(require,module,exports){
+},{}],240:[function(require,module,exports){
 'use strict';
 module.exports = function generate__limitItems(it, $keyword) {
   var out = ' ';
@@ -83931,7 +84586,7 @@ module.exports = function generate__limitItems(it, $keyword) {
   return out;
 }
 
-},{}],240:[function(require,module,exports){
+},{}],241:[function(require,module,exports){
 'use strict';
 module.exports = function generate__limitLength(it, $keyword) {
   var out = ' ';
@@ -84014,7 +84669,7 @@ module.exports = function generate__limitLength(it, $keyword) {
   return out;
 }
 
-},{}],241:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 'use strict';
 module.exports = function generate__limitProperties(it, $keyword) {
   var out = ' ';
@@ -84092,7 +84747,7 @@ module.exports = function generate__limitProperties(it, $keyword) {
   return out;
 }
 
-},{}],242:[function(require,module,exports){
+},{}],243:[function(require,module,exports){
 'use strict';
 module.exports = function generate_allOf(it, $keyword) {
   var out = ' ';
@@ -84137,7 +84792,7 @@ module.exports = function generate_allOf(it, $keyword) {
   return out;
 }
 
-},{}],243:[function(require,module,exports){
+},{}],244:[function(require,module,exports){
 'use strict';
 module.exports = function generate_anyOf(it, $keyword) {
   var out = ' ';
@@ -84204,7 +84859,7 @@ module.exports = function generate_anyOf(it, $keyword) {
   return out;
 }
 
-},{}],244:[function(require,module,exports){
+},{}],245:[function(require,module,exports){
 'use strict';
 module.exports = function generate_constant(it, $keyword) {
   var out = ' ';
@@ -84258,7 +84913,7 @@ module.exports = function generate_constant(it, $keyword) {
   return out;
 }
 
-},{}],245:[function(require,module,exports){
+},{}],246:[function(require,module,exports){
 'use strict';
 module.exports = function generate_custom(it, $keyword) {
   var out = ' ';
@@ -84480,7 +85135,7 @@ module.exports = function generate_custom(it, $keyword) {
   return out;
 }
 
-},{}],246:[function(require,module,exports){
+},{}],247:[function(require,module,exports){
 'use strict';
 module.exports = function generate_dependencies(it, $keyword) {
   var out = ' ';
@@ -84629,7 +85284,7 @@ module.exports = function generate_dependencies(it, $keyword) {
   return out;
 }
 
-},{}],247:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 'use strict';
 module.exports = function generate_enum(it, $keyword) {
   var out = ' ';
@@ -84696,7 +85351,7 @@ module.exports = function generate_enum(it, $keyword) {
   return out;
 }
 
-},{}],248:[function(require,module,exports){
+},{}],249:[function(require,module,exports){
 'use strict';
 module.exports = function generate_format(it, $keyword) {
   var out = ' ';
@@ -84836,7 +85491,7 @@ module.exports = function generate_format(it, $keyword) {
   return out;
 }
 
-},{}],249:[function(require,module,exports){
+},{}],250:[function(require,module,exports){
 'use strict';
 module.exports = function generate_items(it, $keyword) {
   var out = ' ';
@@ -84982,7 +85637,7 @@ module.exports = function generate_items(it, $keyword) {
   return out;
 }
 
-},{}],250:[function(require,module,exports){
+},{}],251:[function(require,module,exports){
 'use strict';
 module.exports = function generate_multipleOf(it, $keyword) {
   var out = ' ';
@@ -85060,7 +85715,7 @@ module.exports = function generate_multipleOf(it, $keyword) {
   return out;
 }
 
-},{}],251:[function(require,module,exports){
+},{}],252:[function(require,module,exports){
 'use strict';
 module.exports = function generate_not(it, $keyword) {
   var out = ' ';
@@ -85145,7 +85800,7 @@ module.exports = function generate_not(it, $keyword) {
   return out;
 }
 
-},{}],252:[function(require,module,exports){
+},{}],253:[function(require,module,exports){
 'use strict';
 module.exports = function generate_oneOf(it, $keyword) {
   var out = ' ';
@@ -85223,7 +85878,7 @@ module.exports = function generate_oneOf(it, $keyword) {
   return out;
 }
 
-},{}],253:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 'use strict';
 module.exports = function generate_pattern(it, $keyword) {
   var out = ' ';
@@ -85299,7 +85954,7 @@ module.exports = function generate_pattern(it, $keyword) {
   return out;
 }
 
-},{}],254:[function(require,module,exports){
+},{}],255:[function(require,module,exports){
 'use strict';
 module.exports = function generate_patternRequired(it, $keyword) {
   var out = ' ';
@@ -85352,7 +86007,7 @@ module.exports = function generate_patternRequired(it, $keyword) {
   return out;
 }
 
-},{}],255:[function(require,module,exports){
+},{}],256:[function(require,module,exports){
 'use strict';
 module.exports = function generate_properties(it, $keyword) {
   var out = ' ';
@@ -85799,7 +86454,7 @@ module.exports = function generate_properties(it, $keyword) {
   return out;
 }
 
-},{}],256:[function(require,module,exports){
+},{}],257:[function(require,module,exports){
 'use strict';
 module.exports = function generate_ref(it, $keyword) {
   var out = ' ';
@@ -85920,7 +86575,7 @@ module.exports = function generate_ref(it, $keyword) {
   return out;
 }
 
-},{}],257:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 'use strict';
 module.exports = function generate_required(it, $keyword) {
   var out = ' ';
@@ -86171,7 +86826,7 @@ module.exports = function generate_required(it, $keyword) {
   return out;
 }
 
-},{}],258:[function(require,module,exports){
+},{}],259:[function(require,module,exports){
 'use strict';
 module.exports = function generate_switch(it, $keyword) {
   var out = ' ';
@@ -86301,7 +86956,7 @@ module.exports = function generate_switch(it, $keyword) {
   return out;
 }
 
-},{}],259:[function(require,module,exports){
+},{}],260:[function(require,module,exports){
 'use strict';
 module.exports = function generate_uniqueItems(it, $keyword) {
   var out = ' ';
@@ -86374,7 +87029,7 @@ module.exports = function generate_uniqueItems(it, $keyword) {
   return out;
 }
 
-},{}],260:[function(require,module,exports){
+},{}],261:[function(require,module,exports){
 'use strict';
 module.exports = function generate_validate(it, $keyword) {
   var out = '';
@@ -86751,7 +87406,7 @@ module.exports = function generate_validate(it, $keyword) {
   return out;
 }
 
-},{}],261:[function(require,module,exports){
+},{}],262:[function(require,module,exports){
 'use strict';
 
 var IDENTIFIER = /^[a-z_$][a-z0-9_$\-]*$/i;
@@ -86882,7 +87537,7 @@ function removeKeyword(keyword) {
   }
 }
 
-},{"./dotjs/custom":245}],262:[function(require,module,exports){
+},{"./dotjs/custom":246}],263:[function(require,module,exports){
 module.exports={
     "id": "http://json-schema.org/draft-04/schema#",
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -87034,7 +87689,7 @@ module.exports={
     "default": {}
 }
 
-},{}],263:[function(require,module,exports){
+},{}],264:[function(require,module,exports){
 module.exports={
     "id": "https://raw.githubusercontent.com/epoberezkin/ajv/master/lib/refs/json-schema-v5.json#",
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -87364,7 +88019,7 @@ module.exports={
     "default": {}
 }
 
-},{}],264:[function(require,module,exports){
+},{}],265:[function(require,module,exports){
 'use strict';
 
 var META_SCHEMA_ID = 'https://raw.githubusercontent.com/epoberezkin/ajv/master/lib/refs/json-schema-v5.json';
@@ -87418,7 +88073,7 @@ function containsMacro(schema) {
   };
 }
 
-},{"./dotjs/_formatLimit":237,"./dotjs/constant":244,"./dotjs/patternRequired":254,"./dotjs/switch":258,"./refs/json-schema-v5.json":263}],265:[function(require,module,exports){
+},{"./dotjs/_formatLimit":238,"./dotjs/constant":245,"./dotjs/patternRequired":255,"./dotjs/switch":259,"./refs/json-schema-v5.json":264}],266:[function(require,module,exports){
 
 /**
  * slice() reference.
@@ -87657,7 +88312,7 @@ function isObject(val) {
   return Object == val.constructor;
 }
 
-},{}],266:[function(require,module,exports){
+},{}],267:[function(require,module,exports){
 var json = typeof JSON !== 'undefined' ? JSON : require('jsonify');
 
 module.exports = function (obj, opts) {
@@ -87743,7 +88398,7 @@ var objectKeys = Object.keys || function (obj) {
     return keys;
 };
 
-},{"jsonify":191}],267:[function(require,module,exports){
+},{"jsonify":191}],268:[function(require,module,exports){
 module.exports={
   "id": "afterRequest.json#",
   "type": "object",
@@ -87774,7 +88429,7 @@ module.exports={
   }
 }
 
-},{}],268:[function(require,module,exports){
+},{}],269:[function(require,module,exports){
 module.exports={
   "id": "beforeRequest.json#",
   "type": "object",
@@ -87805,7 +88460,7 @@ module.exports={
   }
 }
 
-},{}],269:[function(require,module,exports){
+},{}],270:[function(require,module,exports){
 module.exports={
   "id": "browser.json#",
   "type": "object",
@@ -87826,7 +88481,7 @@ module.exports={
   }
 }
 
-},{}],270:[function(require,module,exports){
+},{}],271:[function(require,module,exports){
 module.exports={
   "id": "cache.json#",
   "properties": {
@@ -87848,7 +88503,7 @@ module.exports={
   }
 }
 
-},{}],271:[function(require,module,exports){
+},{}],272:[function(require,module,exports){
 module.exports={
   "id": "content.json#",
   "type": "object",
@@ -87878,7 +88533,7 @@ module.exports={
   }
 }
 
-},{}],272:[function(require,module,exports){
+},{}],273:[function(require,module,exports){
 module.exports={
   "id": "cookie.json#",
   "type": "object",
@@ -87915,7 +88570,7 @@ module.exports={
   }
 }
 
-},{}],273:[function(require,module,exports){
+},{}],274:[function(require,module,exports){
 module.exports={
   "id": "creator.json#",
   "type": "object",
@@ -87936,7 +88591,7 @@ module.exports={
   }
 }
 
-},{}],274:[function(require,module,exports){
+},{}],275:[function(require,module,exports){
 module.exports={
   "id": "entry.json#",
   "type": "object",
@@ -87990,7 +88645,7 @@ module.exports={
   }
 }
 
-},{}],275:[function(require,module,exports){
+},{}],276:[function(require,module,exports){
 module.exports={
   "id": "har.json#",
   "type": "object",
@@ -88004,7 +88659,7 @@ module.exports={
   }
 }
 
-},{}],276:[function(require,module,exports){
+},{}],277:[function(require,module,exports){
 module.exports={
   "id": "header.json#",
   "type": "object",
@@ -88025,7 +88680,7 @@ module.exports={
   }
 }
 
-},{}],277:[function(require,module,exports){
+},{}],278:[function(require,module,exports){
 'use strict'
 
 module.exports = {
@@ -88049,7 +88704,7 @@ module.exports = {
   timings: require('./timings.json')
 }
 
-},{"./afterRequest.json":267,"./beforeRequest.json":268,"./browser.json":269,"./cache.json":270,"./content.json":271,"./cookie.json":272,"./creator.json":273,"./entry.json":274,"./har.json":275,"./header.json":276,"./log.json":278,"./page.json":279,"./pageTimings.json":280,"./postData.json":281,"./query.json":282,"./request.json":283,"./response.json":284,"./timings.json":285}],278:[function(require,module,exports){
+},{"./afterRequest.json":268,"./beforeRequest.json":269,"./browser.json":270,"./cache.json":271,"./content.json":272,"./cookie.json":273,"./creator.json":274,"./entry.json":275,"./har.json":276,"./header.json":277,"./log.json":279,"./page.json":280,"./pageTimings.json":281,"./postData.json":282,"./query.json":283,"./request.json":284,"./response.json":285,"./timings.json":286}],279:[function(require,module,exports){
 module.exports={
   "id": "log.json#",
   "type": "object",
@@ -88086,7 +88741,7 @@ module.exports={
   }
 }
 
-},{}],279:[function(require,module,exports){
+},{}],280:[function(require,module,exports){
 module.exports={
   "id": "page.json#",
   "type": "object",
@@ -88119,7 +88774,7 @@ module.exports={
   }
 }
 
-},{}],280:[function(require,module,exports){
+},{}],281:[function(require,module,exports){
 module.exports={
   "id": "pageTimings.json#",
   "type": "object",
@@ -88138,7 +88793,7 @@ module.exports={
   }
 }
 
-},{}],281:[function(require,module,exports){
+},{}],282:[function(require,module,exports){
 module.exports={
   "id": "postData.json#",
   "type": "object",
@@ -88182,7 +88837,7 @@ module.exports={
   }
 }
 
-},{}],282:[function(require,module,exports){
+},{}],283:[function(require,module,exports){
 module.exports={
   "id": "query.json#",
   "type": "object",
@@ -88203,7 +88858,7 @@ module.exports={
   }
 }
 
-},{}],283:[function(require,module,exports){
+},{}],284:[function(require,module,exports){
 module.exports={
   "id": "request.json#",
   "type": "object",
@@ -88261,7 +88916,7 @@ module.exports={
   }
 }
 
-},{}],284:[function(require,module,exports){
+},{}],285:[function(require,module,exports){
 module.exports={
   "id": "response.json#",
   "type": "object",
@@ -88316,7 +88971,7 @@ module.exports={
   }
 }
 
-},{}],285:[function(require,module,exports){
+},{}],286:[function(require,module,exports){
 module.exports={
   "id": "timings.json#",
   "required": [
@@ -88359,7 +89014,7 @@ module.exports={
   }
 }
 
-},{}],286:[function(require,module,exports){
+},{}],287:[function(require,module,exports){
 /*
     HTTP Hawk Authentication Scheme
     Copyright (c) 2012-2014, Eran Hammer <eran@hammer.io>
@@ -88998,7 +89653,7 @@ if (typeof module !== 'undefined' && module.exports) {
 /* eslint-enable */
 // $lab:coverage:on$
 
-},{}],287:[function(require,module,exports){
+},{}],288:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var parser = require('./parser');
@@ -89029,7 +89684,7 @@ module.exports = {
   verifyHMAC: verify.verifyHMAC
 };
 
-},{"./parser":288,"./signer":289,"./utils":290,"./verify":291}],288:[function(require,module,exports){
+},{"./parser":289,"./signer":290,"./utils":291,"./verify":292}],289:[function(require,module,exports){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
 var assert = require('assert-plus');
@@ -89349,7 +90004,7 @@ module.exports = {
 
 };
 
-},{"./utils":290,"assert-plus":292,"util":181}],289:[function(require,module,exports){
+},{"./utils":291,"assert-plus":293,"util":181}],290:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
@@ -89752,7 +90407,7 @@ module.exports = {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"./utils":290,"assert-plus":292,"crypto":59,"http":170,"jsprim":293,"sshpk":315,"util":181}],290:[function(require,module,exports){
+},{"../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"./utils":291,"assert-plus":293,"crypto":59,"http":170,"jsprim":294,"sshpk":316,"util":181}],291:[function(require,module,exports){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
 var assert = require('assert-plus');
@@ -89866,7 +90521,7 @@ module.exports = {
   }
 };
 
-},{"assert-plus":292,"sshpk":315,"util":181}],291:[function(require,module,exports){
+},{"assert-plus":293,"sshpk":316,"util":181}],292:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -89958,7 +90613,7 @@ module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./utils":290,"assert-plus":292,"buffer":49,"crypto":59,"sshpk":315}],292:[function(require,module,exports){
+},{"./utils":291,"assert-plus":293,"buffer":49,"crypto":59,"sshpk":316}],293:[function(require,module,exports){
 (function (Buffer,process){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 // Copyright 2015 Joyent, Inc.
@@ -90168,7 +90823,7 @@ function _setExports(ndebug) {
 module.exports = _setExports(process.env.NODE_NDEBUG);
 
 }).call(this,{"isBuffer":require("../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js")},require('_process'))
-},{"../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"stream":169,"util":181}],293:[function(require,module,exports){
+},{"../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"stream":169,"util":181}],294:[function(require,module,exports){
 /*
  * lib/jsprim.js: utilities for primitive JavaScript types
  */
@@ -90905,7 +91560,7 @@ function mergeObjects(provided, overrides, defaults)
 	return (rv);
 }
 
-},{"assert-plus":294,"extsprintf":295,"json-schema":296,"util":181,"verror":297}],294:[function(require,module,exports){
+},{"assert-plus":295,"extsprintf":296,"json-schema":297,"util":181,"verror":298}],295:[function(require,module,exports){
 (function (Buffer,process){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 // Copyright 2015 Joyent, Inc.
@@ -91120,7 +91775,7 @@ function _setExports(ndebug) {
 module.exports = _setExports(process.env.NODE_NDEBUG);
 
 }).call(this,{"isBuffer":require("../../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js")},require('_process'))
-},{"../../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"stream":169,"util":181}],295:[function(require,module,exports){
+},{"../../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"stream":169,"util":181}],296:[function(require,module,exports){
 /*
  * extsprintf.js: extended POSIX-style sprintf
  */
@@ -91288,7 +91943,7 @@ function dumpException(ex)
 	return (ret);
 }
 
-},{"assert":16,"util":181}],296:[function(require,module,exports){
+},{"assert":16,"util":181}],297:[function(require,module,exports){
 /**
  * JSONSchema Validator - Validates JavaScript objects using JSON Schemas
  *	(http://www.json.com/json-schema-proposal/)
@@ -91563,7 +92218,7 @@ exports.mustBeValid = function(result){
 return exports;
 }));
 
-},{}],297:[function(require,module,exports){
+},{}],298:[function(require,module,exports){
 /*
  * verror.js: richer JavaScript errors
  */
@@ -91722,7 +92377,7 @@ WError.prototype.cause = function we_cause(c)
 	return (this.we_cause);
 };
 
-},{"assert":16,"extsprintf":295,"util":181}],298:[function(require,module,exports){
+},{"assert":16,"extsprintf":296,"util":181}],299:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -91894,7 +92549,7 @@ module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":49}],299:[function(require,module,exports){
+},{"buffer":49}],300:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -92275,7 +92930,7 @@ Certificate._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./errors":302,"./fingerprint":303,"./formats/openssh-cert":305,"./formats/x509":313,"./formats/x509-pem":312,"./identity":314,"./key":316,"./private-key":317,"./signature":318,"./utils":320,"assert-plus":327,"buffer":49,"crypto":59,"util":181}],300:[function(require,module,exports){
+},{"./algs":299,"./errors":303,"./fingerprint":304,"./formats/openssh-cert":306,"./formats/x509":314,"./formats/x509-pem":313,"./identity":315,"./key":317,"./private-key":318,"./signature":319,"./utils":321,"assert-plus":328,"buffer":49,"crypto":59,"util":181}],301:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -92690,7 +93345,7 @@ function generateECDSA(curve) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./key":316,"./private-key":317,"./utils":320,"assert-plus":327,"buffer":49,"crypto":59,"ecc-jsbn":329,"ecc-jsbn/lib/ec":330,"jsbn":332,"tweetnacl":333}],301:[function(require,module,exports){
+},{"./algs":299,"./key":317,"./private-key":318,"./utils":321,"assert-plus":328,"buffer":49,"crypto":59,"ecc-jsbn":330,"ecc-jsbn/lib/ec":331,"jsbn":333,"tweetnacl":334}],302:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -92790,7 +93445,7 @@ Signer.prototype.sign = function () {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./signature":318,"assert-plus":327,"buffer":49,"stream":169,"tweetnacl":333,"util":181}],302:[function(require,module,exports){
+},{"./signature":319,"assert-plus":328,"buffer":49,"stream":169,"tweetnacl":334,"util":181}],303:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var assert = require('assert-plus');
@@ -92876,7 +93531,7 @@ module.exports = {
 	CertificateParseError: CertificateParseError
 };
 
-},{"assert-plus":327,"util":181}],303:[function(require,module,exports){
+},{"assert-plus":328,"util":181}],304:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -93041,7 +93696,7 @@ Fingerprint._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./certificate":299,"./errors":302,"./key":316,"./utils":320,"assert-plus":327,"buffer":49,"crypto":59}],304:[function(require,module,exports){
+},{"./algs":299,"./certificate":300,"./errors":303,"./key":317,"./utils":321,"assert-plus":328,"buffer":49,"crypto":59}],305:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -93118,7 +93773,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../key":316,"../private-key":317,"../utils":320,"./pem":306,"./rfc4253":309,"./ssh":311,"assert-plus":327,"buffer":49}],305:[function(require,module,exports){
+},{"../key":317,"../private-key":318,"../utils":321,"./pem":307,"./rfc4253":310,"./ssh":312,"assert-plus":328,"buffer":49}],306:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -93444,7 +94099,7 @@ function getCertType(key) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../certificate":299,"../identity":314,"../key":316,"../private-key":317,"../signature":318,"../ssh-buffer":319,"../utils":320,"./rfc4253":309,"assert-plus":327,"buffer":49,"crypto":59}],306:[function(require,module,exports){
+},{"../algs":299,"../certificate":300,"../identity":315,"../key":317,"../private-key":318,"../signature":319,"../ssh-buffer":320,"../utils":321,"./rfc4253":310,"assert-plus":328,"buffer":49,"crypto":59}],307:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -93634,7 +94289,7 @@ function write(key, options, type) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../errors":302,"../key":316,"../private-key":317,"../utils":320,"./pkcs1":307,"./pkcs8":308,"./rfc4253":309,"./ssh-private":310,"asn1":326,"assert-plus":327,"buffer":49,"crypto":59}],307:[function(require,module,exports){
+},{"../algs":299,"../errors":303,"../key":317,"../private-key":318,"../utils":321,"./pkcs1":308,"./pkcs8":309,"./rfc4253":310,"./ssh-private":311,"asn1":327,"assert-plus":328,"buffer":49,"crypto":59}],308:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -93958,7 +94613,7 @@ function writePkcs1ECDSAPrivate(der, key) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../key":316,"../private-key":317,"../utils":320,"./pem":306,"./pkcs8":308,"asn1":326,"assert-plus":327,"buffer":49}],308:[function(require,module,exports){
+},{"../algs":299,"../key":317,"../private-key":318,"../utils":321,"./pem":307,"./pkcs8":309,"asn1":327,"assert-plus":328,"buffer":49}],309:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -94467,7 +95122,7 @@ function writePkcs8ECDSAPrivate(key, der) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../key":316,"../private-key":317,"../utils":320,"./pem":306,"asn1":326,"assert-plus":327,"buffer":49}],309:[function(require,module,exports){
+},{"../algs":299,"../key":317,"../private-key":318,"../utils":321,"./pem":307,"asn1":327,"assert-plus":328,"buffer":49}],310:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -94617,7 +95272,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../key":316,"../private-key":317,"../ssh-buffer":319,"../utils":320,"assert-plus":327,"buffer":49}],310:[function(require,module,exports){
+},{"../algs":299,"../key":317,"../private-key":318,"../ssh-buffer":320,"../utils":321,"assert-plus":328,"buffer":49}],311:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -94882,7 +95537,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../errors":302,"../key":316,"../private-key":317,"../ssh-buffer":319,"../utils":320,"./pem":306,"./rfc4253":309,"asn1":326,"assert-plus":327,"bcrypt-pbkdf":328,"buffer":49,"crypto":59}],311:[function(require,module,exports){
+},{"../algs":299,"../errors":303,"../key":317,"../private-key":318,"../ssh-buffer":320,"../utils":321,"./pem":307,"./rfc4253":310,"asn1":327,"assert-plus":328,"bcrypt-pbkdf":329,"buffer":49,"crypto":59}],312:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -95000,7 +95655,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../key":316,"../private-key":317,"../utils":320,"./rfc4253":309,"./ssh-private":310,"assert-plus":327,"buffer":49}],312:[function(require,module,exports){
+},{"../key":317,"../private-key":318,"../utils":321,"./rfc4253":310,"./ssh-private":311,"assert-plus":328,"buffer":49}],313:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -95081,7 +95736,7 @@ function write(cert, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../certificate":299,"../identity":314,"../key":316,"../private-key":317,"../signature":318,"../utils":320,"./pem":306,"./x509":313,"asn1":326,"assert-plus":327,"buffer":49}],313:[function(require,module,exports){
+},{"../algs":299,"../certificate":300,"../identity":315,"../key":317,"../private-key":318,"../signature":319,"../utils":321,"./pem":307,"./x509":314,"asn1":327,"assert-plus":328,"buffer":49}],314:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -95811,7 +96466,7 @@ function writeBitField(setBits, bitIndex) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":298,"../certificate":299,"../identity":314,"../key":316,"../private-key":317,"../signature":318,"../utils":320,"./pem":306,"./pkcs8":308,"asn1":326,"assert-plus":327,"buffer":49}],314:[function(require,module,exports){
+},{"../algs":299,"../certificate":300,"../identity":315,"../key":317,"../private-key":318,"../signature":319,"../utils":321,"./pem":307,"./pkcs8":309,"asn1":327,"assert-plus":328,"buffer":49}],315:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -96092,7 +96747,7 @@ Identity._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./errors":302,"./fingerprint":303,"./signature":318,"./utils":320,"asn1":326,"assert-plus":327,"buffer":49,"crypto":59,"util":181}],315:[function(require,module,exports){
+},{"./algs":299,"./errors":303,"./fingerprint":304,"./signature":319,"./utils":321,"asn1":327,"assert-plus":328,"buffer":49,"crypto":59,"util":181}],316:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var Key = require('./key');
@@ -96133,7 +96788,7 @@ module.exports = {
 	CertificateParseError: errs.CertificateParseError
 };
 
-},{"./certificate":299,"./errors":302,"./fingerprint":303,"./identity":314,"./key":316,"./private-key":317,"./signature":318}],316:[function(require,module,exports){
+},{"./certificate":300,"./errors":303,"./fingerprint":304,"./identity":315,"./key":317,"./private-key":318,"./signature":319}],317:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -96411,7 +97066,7 @@ Key._oldVersionDetect = function (obj) {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"./algs":298,"./dhe":300,"./ed-compat":301,"./errors":302,"./fingerprint":303,"./formats/auto":304,"./formats/pem":306,"./formats/pkcs1":307,"./formats/pkcs8":308,"./formats/rfc4253":309,"./formats/ssh":311,"./formats/ssh-private":310,"./private-key":317,"./signature":318,"./utils":320,"assert-plus":327,"crypto":59}],317:[function(require,module,exports){
+},{"../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"./algs":299,"./dhe":301,"./ed-compat":302,"./errors":303,"./fingerprint":304,"./formats/auto":305,"./formats/pem":307,"./formats/pkcs1":308,"./formats/pkcs8":309,"./formats/rfc4253":310,"./formats/ssh":312,"./formats/ssh-private":311,"./private-key":318,"./signature":319,"./utils":321,"assert-plus":328,"crypto":59}],318:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2017 Joyent, Inc.
 
@@ -96669,7 +97324,7 @@ PrivateKey._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./dhe":300,"./ed-compat":301,"./errors":302,"./fingerprint":303,"./formats/auto":304,"./formats/pem":306,"./formats/pkcs1":307,"./formats/pkcs8":308,"./formats/rfc4253":309,"./formats/ssh-private":310,"./key":316,"./signature":318,"./utils":320,"assert-plus":327,"buffer":49,"crypto":59,"tweetnacl":333,"util":181}],318:[function(require,module,exports){
+},{"./algs":299,"./dhe":301,"./ed-compat":302,"./errors":303,"./fingerprint":304,"./formats/auto":305,"./formats/pem":307,"./formats/pkcs1":308,"./formats/pkcs8":309,"./formats/rfc4253":310,"./formats/ssh-private":311,"./key":317,"./signature":319,"./utils":321,"assert-plus":328,"buffer":49,"crypto":59,"tweetnacl":334,"util":181}],319:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -96986,7 +97641,7 @@ Signature._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":298,"./errors":302,"./ssh-buffer":319,"./utils":320,"asn1":326,"assert-plus":327,"buffer":49,"crypto":59}],319:[function(require,module,exports){
+},{"./algs":299,"./errors":303,"./ssh-buffer":320,"./utils":321,"asn1":327,"assert-plus":328,"buffer":49,"crypto":59}],320:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -97138,7 +97793,7 @@ SSHBuffer.prototype.write = function (buf) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"assert-plus":327,"buffer":49}],320:[function(require,module,exports){
+},{"assert-plus":328,"buffer":49}],321:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -97430,7 +98085,7 @@ function opensshCipherInfo(cipher) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./private-key":317,"assert-plus":327,"buffer":49,"crypto":59,"jsbn":332}],321:[function(require,module,exports){
+},{"./private-key":318,"assert-plus":328,"buffer":49,"crypto":59,"jsbn":333}],322:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 
@@ -97445,7 +98100,7 @@ module.exports = {
 
 };
 
-},{}],322:[function(require,module,exports){
+},{}],323:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 var errors = require('./errors');
@@ -97474,7 +98129,7 @@ for (var e in errors) {
     module.exports[e] = errors[e];
 }
 
-},{"./errors":321,"./reader":323,"./types":324,"./writer":325}],323:[function(require,module,exports){
+},{"./errors":322,"./reader":324,"./types":325,"./writer":326}],324:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
@@ -97739,7 +98394,7 @@ Reader.prototype._readTag = function(tag) {
 module.exports = Reader;
 
 }).call(this,require("buffer").Buffer)
-},{"./errors":321,"./types":324,"assert":16,"buffer":49}],324:[function(require,module,exports){
+},{"./errors":322,"./types":325,"assert":16,"buffer":49}],325:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 
@@ -97777,7 +98432,7 @@ module.exports = {
   Context: 128
 };
 
-},{}],325:[function(require,module,exports){
+},{}],326:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
@@ -98097,7 +98752,7 @@ Writer.prototype._ensure = function(len) {
 module.exports = Writer;
 
 }).call(this,require("buffer").Buffer)
-},{"./errors":321,"./types":324,"assert":16,"buffer":49}],326:[function(require,module,exports){
+},{"./errors":322,"./types":325,"assert":16,"buffer":49}],327:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 // If you have no idea what ASN.1 or BER is, see this:
@@ -98119,9 +98774,9 @@ module.exports = {
 
 };
 
-},{"./ber/index":322}],327:[function(require,module,exports){
-arguments[4][294][0].apply(exports,arguments)
-},{"../../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"dup":294,"stream":169,"util":181}],328:[function(require,module,exports){
+},{"./ber/index":323}],328:[function(require,module,exports){
+arguments[4][295][0].apply(exports,arguments)
+},{"../../../../../../../../../../../../.nvm/versions/node/v6.10.0/lib/node_modules/browserify/node_modules/is-buffer/index.js":106,"_process":134,"assert":16,"dup":295,"stream":169,"util":181}],329:[function(require,module,exports){
 'use strict';
 
 var crypto_hash_sha512 = require('tweetnacl').lowlevel.crypto_hash;
@@ -98679,7 +99334,7 @@ module.exports = {
       pbkdf: bcrypt_pbkdf
 };
 
-},{"tweetnacl":333}],329:[function(require,module,exports){
+},{"tweetnacl":334}],330:[function(require,module,exports){
 (function (Buffer){
 var crypto = require("crypto");
 var BigInteger = require("jsbn").BigInteger;
@@ -98740,7 +99395,7 @@ exports.ECKey = function(curve, key, isPublic)
 
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/ec.js":330,"./lib/sec.js":331,"buffer":49,"crypto":59,"jsbn":332}],330:[function(require,module,exports){
+},{"./lib/ec.js":331,"./lib/sec.js":332,"buffer":49,"crypto":59,"jsbn":333}],331:[function(require,module,exports){
 // Basic Javascript Elliptic Curve implementation
 // Ported loosely from BouncyCastle's Java EC code
 // Only Fp curves implemented for now
@@ -99303,7 +99958,7 @@ var exports = {
 
 module.exports = exports
 
-},{"jsbn":332}],331:[function(require,module,exports){
+},{"jsbn":333}],332:[function(require,module,exports){
 // Named EC curves
 
 // Requires ec.js, jsbn.js, and jsbn2.js
@@ -99475,7 +100130,7 @@ module.exports = {
   "secp256r1":secp256r1
 }
 
-},{"./ec.js":330,"jsbn":332}],332:[function(require,module,exports){
+},{"./ec.js":331,"jsbn":333}],333:[function(require,module,exports){
 (function(){
 
     // Copyright (c) 2005  Tom Wu
@@ -100834,7 +101489,7 @@ module.exports = {
 
 }).call(this);
 
-},{}],333:[function(require,module,exports){
+},{}],334:[function(require,module,exports){
 (function(nacl) {
 'use strict';
 
@@ -103224,7 +103879,7 @@ nacl.setPRNG = function(fn) {
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
 
-},{"crypto":20}],334:[function(require,module,exports){
+},{"crypto":20}],335:[function(require,module,exports){
 module.exports      = isTypedArray
 isTypedArray.strict = isStrictTypedArray
 isTypedArray.loose  = isLooseTypedArray
@@ -103267,7 +103922,7 @@ function isLooseTypedArray(arr) {
   return names[toString.call(arr)]
 }
 
-},{}],335:[function(require,module,exports){
+},{}],336:[function(require,module,exports){
 var stream = require('stream')
 
 
@@ -103296,7 +103951,7 @@ module.exports.isReadable = isReadable
 module.exports.isWritable = isWritable
 module.exports.isDuplex   = isDuplex
 
-},{"stream":169}],336:[function(require,module,exports){
+},{"stream":169}],337:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -103325,7 +103980,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],337:[function(require,module,exports){
+},{}],338:[function(require,module,exports){
 var crypto = require('crypto')
   , qs = require('querystring')
   ;
@@ -103463,7 +104118,7 @@ exports.rfc3986 = rfc3986
 exports.generateBase = generateBase
 
 
-},{"crypto":59,"querystring":144}],338:[function(require,module,exports){
+},{"crypto":59,"querystring":144}],339:[function(require,module,exports){
 (function (process){
 // Generated by CoffeeScript 1.7.1
 (function() {
@@ -103499,7 +104154,7 @@ exports.generateBase = generateBase
 }).call(this);
 
 }).call(this,require('_process'))
-},{"_process":134}],339:[function(require,module,exports){
+},{"_process":134}],340:[function(require,module,exports){
 (function (Buffer){
 var util = require('util')
 var Stream = require('stream')
@@ -103605,7 +104260,7 @@ function alignedWrite(buffer) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":49,"stream":169,"string_decoder":174,"util":181}],340:[function(require,module,exports){
+},{"buffer":49,"stream":169,"string_decoder":174,"util":181}],341:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -104943,7 +105598,7 @@ module.exports = {
   canonicalDomain: canonicalDomain
 };
 
-},{"../package.json":346,"./memstore":341,"./pathMatch":342,"./permuteDomain":343,"./pubsuffix":344,"./store":345,"net":1,"punycode":141,"url":176}],341:[function(require,module,exports){
+},{"../package.json":347,"./memstore":342,"./pathMatch":343,"./permuteDomain":344,"./pubsuffix":345,"./store":346,"net":1,"punycode":141,"url":176}],342:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -105115,7 +105770,7 @@ MemoryCookieStore.prototype.getAllCookies = function(cb) {
   cb(null, cookies);
 };
 
-},{"./pathMatch":342,"./permuteDomain":343,"./store":345,"util":181}],342:[function(require,module,exports){
+},{"./pathMatch":343,"./permuteDomain":344,"./store":346,"util":181}],343:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -105178,7 +105833,7 @@ function pathMatch (reqPath, cookiePath) {
 
 exports.pathMatch = pathMatch;
 
-},{}],343:[function(require,module,exports){
+},{}],344:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -105236,7 +105891,7 @@ function permuteDomain (domain) {
 
 exports.permuteDomain = permuteDomain;
 
-},{"./pubsuffix":344}],344:[function(require,module,exports){
+},{"./pubsuffix":345}],345:[function(require,module,exports){
 /****************************************************
  * AUTOMATICALLY GENERATED by generate-pubsuffix.js *
  *                  DO NOT EDIT!                    *
@@ -105336,7 +105991,7 @@ var index = module.exports.index = Object.freeze(
 
 // END of automatically generated file
 
-},{"punycode":141}],345:[function(require,module,exports){
+},{"punycode":141}],346:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -105409,7 +106064,7 @@ Store.prototype.getAllCookies = function(cb) {
   throw new Error('getAllCookies is not implemented (therefore jar cannot be serialized)');
 };
 
-},{}],346:[function(require,module,exports){
+},{}],347:[function(require,module,exports){
 module.exports={
   "author": {
     "name": "Jeremy Stashewsky",
@@ -105513,7 +106168,7 @@ module.exports={
   "readme": "ERROR: No README data found!"
 }
 
-},{}],347:[function(require,module,exports){
+},{}],348:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -105761,7 +106416,7 @@ if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
 exports.debug = debug // for test
 
 }).call(this,require('_process'))
-},{"_process":134,"assert":16,"events":86,"http":170,"https":102,"net":1,"safe-buffer":354,"tls":1,"util":181}],348:[function(require,module,exports){
+},{"_process":134,"assert":16,"events":86,"http":170,"https":102,"net":1,"safe-buffer":355,"tls":1,"util":181}],349:[function(require,module,exports){
 var v1 = require('./v1');
 var v4 = require('./v4');
 
@@ -105771,7 +106426,7 @@ uuid.v4 = v4;
 
 module.exports = uuid;
 
-},{"./v1":351,"./v4":352}],349:[function(require,module,exports){
+},{"./v1":352,"./v4":353}],350:[function(require,module,exports){
 /**
  * Convert array of 16 byte values to UUID string format of the form:
  * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
@@ -105796,7 +106451,7 @@ function bytesToUuid(buf, offset) {
 
 module.exports = bytesToUuid;
 
-},{}],350:[function(require,module,exports){
+},{}],351:[function(require,module,exports){
 (function (global){
 // Unique ID creation requires a high quality random # generator.  In the
 // browser this is a little complicated due to unknown quality of Math.random()
@@ -105833,7 +106488,7 @@ if (!rng) {
 module.exports = rng;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],351:[function(require,module,exports){
+},{}],352:[function(require,module,exports){
 var rng = require('./lib/rng');
 var bytesToUuid = require('./lib/bytesToUuid');
 
@@ -105935,7 +106590,7 @@ function v1(options, buf, offset) {
 
 module.exports = v1;
 
-},{"./lib/bytesToUuid":349,"./lib/rng":350}],352:[function(require,module,exports){
+},{"./lib/bytesToUuid":350,"./lib/rng":351}],353:[function(require,module,exports){
 var rng = require('./lib/rng');
 var bytesToUuid = require('./lib/bytesToUuid');
 
@@ -105966,7 +106621,7 @@ function v4(options, buf, offset) {
 
 module.exports = v4;
 
-},{"./lib/bytesToUuid":349,"./lib/rng":350}],353:[function(require,module,exports){
+},{"./lib/bytesToUuid":350,"./lib/rng":351}],354:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -107535,37 +108190,115 @@ Request.prototype.toJSON = requestToJSON
 module.exports = Request
 
 }).call(this,require('_process'))
-},{"./lib/auth":203,"./lib/cookies":204,"./lib/getProxyFromURI":205,"./lib/har":206,"./lib/helpers":207,"./lib/multipart":208,"./lib/oauth":209,"./lib/querystring":210,"./lib/redirect":211,"./lib/tunnel":212,"_process":134,"aws-sign2":213,"aws4":214,"caseless":216,"extend":219,"forever-agent":220,"form-data":221,"hawk":286,"http":170,"http-signature":287,"https":102,"is-typedarray":334,"isstream":335,"mime-types":196,"performance-now":338,"safe-buffer":354,"stream":169,"stringstream":339,"url":176,"util":181,"zlib":47}],354:[function(require,module,exports){
+},{"./lib/auth":204,"./lib/cookies":205,"./lib/getProxyFromURI":206,"./lib/har":207,"./lib/helpers":208,"./lib/multipart":209,"./lib/oauth":210,"./lib/querystring":211,"./lib/redirect":212,"./lib/tunnel":213,"_process":134,"aws-sign2":214,"aws4":215,"caseless":217,"extend":220,"forever-agent":221,"form-data":222,"hawk":287,"http":170,"http-signature":288,"https":102,"is-typedarray":335,"isstream":336,"mime-types":196,"performance-now":339,"safe-buffer":355,"stream":169,"stringstream":340,"url":176,"util":181,"zlib":47}],355:[function(require,module,exports){
 arguments[4][160][0].apply(exports,arguments)
-},{"buffer":49,"dup":160}],355:[function(require,module,exports){
+},{"buffer":49,"dup":160}],356:[function(require,module,exports){
 module.exports = function(app) {
-	app.controller('dashboard', [ '$scope', '$state', '$rootScope', '$cookies', function ($scope, $state, $rootScope, $cookies) {
+	app.controller('activate', [ 
+		'$scope', 
+		'$state', 
+		'$rootScope', 
+		'$cookies', 
+		'$location',
+		'clickEvent',
+		function ($scope, $state, $rootScope, $cookies, $location, clickEvent) {
+			$scope.alert = false
+			$scope.activateButtonSpin = false
+			$scope.activate = function() {
+				$scope.activateButtonSpin = true
+				clickEvent.activate($location.search().token, $location.search().code)
+				.then(function(data) {
+					$scope.activateButtonSpin = false
+					if(data.errors){
+						$scope.alert = true
+						$scope.alertText = data.error_message
+					}
+					if(data.notice){
+						$state.go('login')
+					}
+				})
+			}
+	}])
+}
+},{}],357:[function(require,module,exports){
+module.exports = function(app) {
+	app.controller('dashboard', [ 
+		'$scope', 
+		'$state', 
+		'$rootScope', 
+		'$cookies', 
+		function ($scope, $state, $rootScope, $cookies) {
 		$scope.navOne = true 
 		$scope.navTwo = false	
-		$scope.test = "hello"
 		$scope.navButtonLogout = 'Logout'	
-		$scope.title = 'Notify'
+		$scope.title = $cookies.get('fname') + " " + $cookies.get('lname')
 		$scope.loggedInAs = false
 		$scope.email = $cookies.get('email')
-		$scope.loginError = "Can\'t you sign in yet, numb nuts? ¯\\_(ツ)_/¯"
 		$scope.logout = function() {
-			$cookies.remove('auth')
+			$rootScope.array = []
+      $cookies.remove('auth')
       $cookies.remove('uid')
       $cookies.remove('fname')
       $cookies.remove('lname')
       $cookies.remove('email')
+      new PNotify({
+        title: 'User Logged out',
+        type: 'success',
+        animate_speed: 'fast'
+      });
 			$state.go('login')
 		}
+    $scope.onDropComplete = function(index, data, evt) {
+      var otherObj = $rootScope.array[index]
+      var otherIndex = $rootScope.array.indexOf(data)
+      $rootScope.array[index] = data
+      $rootScope.array[otherIndex] = otherObj
+    }
 	}])
 }
-},{}],356:[function(require,module,exports){
+},{}],358:[function(require,module,exports){
 var request 						= require('request')
 
 module.exports = function (app) {
-	app.controller('loginApp', ['$scope', '$state', '$rootScope', '$cookies', function($scope, $state, $rootScope, $cookies) {		
+	app.controller('loginApp', [
+    '$scope', 
+    '$state', 
+    '$rootScope', 
+    '$cookies', 
+    'clickEvent', 
+    function($scope, $state, $rootScope, $cookies, clickEvent) {		
     $scope.username
     $scope.password
-    $scope.login = function (uname, pass){
+    gapi.load('auth2', function() {
+      gapi.auth2.init({
+          client_id: '741864869914-3sf0kb9c4nkhoju2asmh00f4cce7omrr.apps.googleusercontent.com'
+        })
+        var GoogleAuth  = gapi.auth2.getAuthInstance()
+        $scope.googleLogin = function () {
+        $scope.googleButtonSpin = true
+        GoogleAuth.signIn().then(function(googleUser) {
+          clickEvent.onGoogleSignIn(googleUser.Zi.access_token)
+          .then(function(data){
+            new PNotify({
+                title: 'User logged In',
+                type: 'success',
+                animate_speed: 'fast'
+            })
+            $cookies.put('auth', data.application_user.authtoken)
+            $cookies.put('uid', data.application_user.uid)
+            $cookies.put('fname', data.application_user.auth_data.google.user_profile.given_name)
+            $cookies.put('lname', data.application_user.auth_data.google.user_profile.family_name)
+            $cookies.put('email', data.application_user.email)
+            $scope.spinning = false
+            $scope.$apply()
+            $state.go('dashboard')
+          })
+        })
+      }
+    })
+    
+    $scope.login = function () {
+      $scope.loginButtonSpin = true
       var opt = {
         url : "https://api.built.io/v1/application/users/login",
         method : "post",
@@ -107575,18 +108308,28 @@ module.exports = function (app) {
         },
         form : {
           "application_user": {
-            "username" : uname,
-            "password" : pass
+            "username" : $scope.username,
+            "password" : $scope.password
           }
         }
       }
       
-      request(opt, function (err, res, body){
+      request(opt, function (err, res, body) {
         if (typeof body == "string"){
           body = JSON.parse(body)
           if(body.error_message)
-            alert("Couldn't sign you in")
-          if(body.application_user){
+            new PNotify({
+              title: 'Oh No!',
+              text: body.error_message,
+              type: 'error',
+              animate_speed: 'fast'
+            });
+          if(body.application_user) {
+            new PNotify({
+                title: 'Success!',
+                type: 'success',
+                animate_speed: 'fast'
+            })
             $cookies.put('auth', body.application_user.authtoken)
             $cookies.put('uid', body.application_user.uid)
             $cookies.put('fname', body.application_user.first_name)
@@ -107594,6 +108337,8 @@ module.exports = function (app) {
             $cookies.put('email', body.application_user.email)
             $state.go('dashboard')
           }
+          $scope.loginButtonSpin = false
+          $scope.$apply()
         }
       })
     }
@@ -107601,26 +108346,188 @@ module.exports = function (app) {
 }
 
 
-},{"request":202}],357:[function(require,module,exports){
+},{"request":203}],359:[function(require,module,exports){
 module.exports = function (app) {
-	app.controller('task', ['$scope', '$state', '$rootScope', 'clickEvent', '$cookies', function ($scope, $state, $rootScope, clickEvent, $cookies) {
-    $scope.buttons = {
-      edit : "Edit",
-      delete : "Delete"
-    }
-    $scope.button = false
-    $scope.add = function(usertext) {
-      clickEvent.add(usertext)
-    }
-  }])
+	app.controller('registerApp', 
+    [
+      '$scope', 
+      '$state', 
+      '$rootScope', 
+      '$cookies', 
+      'clickEvent', 
+    function($scope, $state, $rootScope, $cookies, clickEvent) {
+      $scope.user = {
+        username: '',
+        email: '',
+        password: '',
+        confirm_password: '',
+        fname : '',
+        lname: ''
+      }	  
+      $scope.message
+      $scope.register = function () {
+        $scope.registerButtonSpin = true
+        clickEvent.signup($scope.user)
+        .then(function (data) {
+          $scope.alert = true
+          if(data.errors) { 
+            new PNotify({
+              title: 'Oh No!',
+              text: data.error_message,
+              type: 'error',
+              animate_speed: 'fast'
+            });
+          }
+          if(data.application_user) {
+            new PNotify({
+                title: 'Success!',
+                text: 'Activation email has been sent to' + data.application_user.email,
+                type: 'success',
+                animate_speed: 'fast'
+            })
+          }
+          $scope.registerButtonSpin = false
+          $scope.$apply()
+        })
+      }
+	}])  
+}
 
+},{}],360:[function(require,module,exports){
+module.exports = function (app) {
+	app.controller('task', [
+    '$scope', 
+    '$state', 
+    '$rootScope', 
+    'clickEvent', 
+    '$cookies',
+    '$timeout', 
+    function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout) {
+      $scope.toDeleteTask = function (uid) {
+        var isUserLogged = clickEvent.isLogged()
+          if(isUserLogged === true) {
+            clickEvent.delete(uid)
+            .then(function(data){
+              $scope.delete()
+            })
+          }
+          else {
+            $scope.error()
+          }
+      }
+
+      $scope.toCheck = function (uid, status) {
+        var isUserLogged = clickEvent.isLogged()
+          if(isUserLogged === true) {
+            var body = {
+              "status" : status
+            }
+            $scope.onUpdateCall(uid, body)
+            .then(function(data) {
+              $scope.update()
+            })
+          }
+          else {
+            $scope.error()
+          }
+      }
+
+      $scope.makeTaskTextEditor = function (uid, data) {
+        var isUserLogged = clickEvent.isLogged()
+          if(isUserLogged === true) {
+            if(data === true) {
+              new PNotify({
+                title: 'Error!',
+                text: 'Empty Input',
+                type: 'error'
+              });
+              return 
+            }
+            var body = {
+              "task_text" : data
+            }
+            $scope.onUpdateCall(uid, body)
+            .then(function(data) {
+              $scope.update()
+            })
+          }
+          else {
+            $scope.error()
+          }
+      }
+      
+      $scope.add = function(usertext) {
+        var isUserLogged = clickEvent.isLogged()
+          if(isUserLogged === true) {
+           if(angular.isString(usertext) != true) {
+              new PNotify({
+                title: 'Error!',
+                text: 'Empty Input',
+                type: 'error'
+              });
+              return 
+            }
+            $scope.taskButtonSpin = true
+            clickEvent.add(usertext)
+            .then(function(data) {
+              $scope.success()
+              $scope.taskButtonSpin = false
+            })
+          }
+          else {
+            $scope.error()
+          }
+      }
+
+      $scope.onUpdateCall = function (uid, body) {
+        var updateCount = 0
+        if(updateCount <= 50) {
+          return clickEvent.update(uid, body)
+        }
+        return
+      }
+    
+      $scope.success = function () {
+        new PNotify({
+          title: 'Added Task',
+          type: 'success',
+          animate_speed: 'fast'
+        });
+      }
+
+      $scope.update = function () {
+        new PNotify({
+            title: 'Updated',
+            type: 'info',
+            animate_speed: 'fast'
+        });
+      }
+
+      $scope.error = function () {
+        new PNotify({
+          title: 'Error!',
+          text: 'Something went wrong',
+          type: 'error'
+        });
+      }
+      
+      $scope.delete = function () {
+          new PNotify({
+            title: 'Task Deleted!',
+            animate_speed: 'fast'
+          });
+        }
+    }])
+
+ 
   app.directive('repeat', function () {
     return {
       templateUrl: '/components/repeat.html'
     }
   })
 }
-},{}],358:[function(require,module,exports){
+
+},{}],361:[function(require,module,exports){
 module.exports = function (app) {
 	app.config(states)
 }
@@ -107632,9 +108539,9 @@ function states($stateProvider, $locationProvider, $urlRouterProvider) {
 	.state('login', state.login)
 	.state('register', state.register)
 	.state('dashboard', state.dashboard)
+	.state('activate', state.activate)
 	$urlRouterProvider
 	.otherwise('/home')
-
 }
 
 var state = {
@@ -107647,6 +108554,9 @@ var state = {
 			},
 			'navbar@home' : {
 				templateUrl : '/components/navbar.html'
+			},
+			'footer@home' : {
+				templateUrl : '/components/footer.html'
 			},
 			data : {
 				requiredLogin : false
@@ -107663,6 +108573,9 @@ var state = {
 			'navbar@login' : {
 				templateUrl : '/components/navbar.html'
 			},
+			'footer@login' : {
+				templateUrl : '/components/footer.html'
+			},
 			data : {
 				requiredLogin : false
 			}	
@@ -107678,6 +108591,9 @@ var state = {
 			'navbar@register' : {
 				templateUrl : '/components/navbar.html'
 			},
+			'footer@register' : {
+				templateUrl : '/components/footer.html'
+			},
 			data : {
 				requiredLogin : false
 			}	
@@ -107690,18 +108606,37 @@ var state = {
 			{
 				templateUrl : '/components/dashboard.html',
 			},
-			'navbar@dashboard' : 
-			{
+			'navbar@dashboard' : {
 				templateUrl : '/components/navbar.html',
 				controller : 'dashboard' 
 			},
-			'task@dashboard' : 
-			{
+			'task@dashboard' : {
 				templateUrl : '/components/tasks.html',
 				controller : 'task' 
 			},
+			'footer@dashboard' : {
+				templateUrl : '/components/footer.html'
+			},
 			data : {
 				requiredLogin : true
+			}	
+		}
+	},
+	activate : {
+		url : '/Activate',
+		views: 
+		{ 
+			'' : {
+				templateUrl : '/components/activate.html',				
+			},
+			'navbar@activate' : {
+				templateUrl : '/components/navbar.html'
+			},
+			'footer@activate' : {
+				templateUrl : '/components/footer.html'
+			},
+			data : {
+				requiredLogin : false
 			}	
 		}
 	}
@@ -107709,13 +108644,13 @@ var state = {
 
 
 
-},{}],359:[function(require,module,exports){
+},{}],362:[function(require,module,exports){
 module.exports = function(app) {
-	app.controller('mainApp', ['$scope', '$rootScope', function ($scope, $rootScope) {
+	app.controller('mainApp', ['$scope', '$rootScope', '$cookies', function ($scope, $rootScope, $cookies) {
 		$scope.homeHeading = "Welcome to the Gaurdian of the Notes"
 		$scope.bannerline = "We are from the Galaxy Galafray our services will help you build things your slimy little brain forgets. So go ahead and Sign In." 
 		$scope.navButtonOne = function() {
-			if(angular.isUndefined($rootScope.auth))
+			if(angular.isUndefined($cookies.get('auth')))
 				return 'Login'
 			else
 				return 'Dashboard'			
@@ -107725,10 +108660,9 @@ module.exports = function(app) {
 		$scope.loggedInAs = true
 		$scope.navOne = false
 		$scope.navTwo = true
-		$rootScope.auth	
 	}])
 }
-},{}],360:[function(require,module,exports){
+},{}],363:[function(require,module,exports){
 var rest = require('../lib/utilities/restfullservice.js')
 var utils = require('../lib/utilities/utils.js')
 
@@ -107740,9 +108674,13 @@ module.exports = function (app) {
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
 		      	$rootScope.array = []
-			      for(var i=0; i <= (data.objects.length - 1); i++) {    	
-			      	if($cookies.get('uid') === data.objects[i].user_reference)
-			      		$rootScope.array.push(data.objects[i])
+			      for(var i=0; i < data.objects.length; i++) {    	
+			      	if($cookies.get('uid') === data.objects[i].user_reference) {
+			      		$rootScope.array.unshift(data.objects[i])
+			      		$rootScope.array.sort(function(a, b) {							  
+								  return new Date(b.created_at) - new Date(a.created_at)
+								})
+			      	}
 			      }
 		      	$rootScope.$apply()
 	      })
@@ -107750,49 +108688,117 @@ module.exports = function (app) {
 		}
 	}])
 
-	app.factory('clickEvent',[ '$cookies', 'getFactory', function($cookies, getFactory) {
+	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
     return {
+    	isLogged : function () {
+    		if(angular.isDefined($cookies.get('auth')))
+    			return true
+    	},
       checkbox : function () {
-
+      	$rootScope.button = true	
       }, 
+      activate : function (token, uid) {
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+				return rest.restfullService(utils.getUrl('/application/users/' + uid + '/activate/' + token), 'GET', utils.getHeaders(), null)
+		    .then(function(data){     	
+		    	return data
+				})
+      },
       add : function (usertext) {
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 				utils.setHeader('content-type','application/json')
 				var data = {
 					object :  {
 						'user_reference' : $cookies.get('uid'),
-						'task_text' : usertext,
+							'task_text' : usertext,
 						'status' : false
 					}
 				}
-		    rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'POST', utils.getHeaders(), data)
+		    return rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'POST', utils.getHeaders(), data)
 		    .then(function(data){     	
 		    	getFactory.tasks()
+		    	return data
 				})
       },
-      delete : function () {      	
-      	var uid = 
+      delete : function (uid) {      	
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
-      	rest.restfullService(utils.getUrl('/classes/tasks/objects?uid=' + uid), 'DELETE', utils.getHeaders(), data)
+      	return rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'DELETE', utils.getHeaders(), null)
 		    .then(function(data){     	
 		    	getFactory.tasks()
+		    	return data
 				})
+      },
+      update : function (uid,  body) {
+      	var data = {
+      		"object" : body
+      	}
+				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+		   	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'PUT', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	getFactory.tasks()
+			    	resolve(data)
+					})
+				})
+      },
+      signup : function(user) {
+      	var data = {
+      		"application_user": {
+		        "username" : user.username,
+		        "email": user.email,
+		        "first_name": user.fname,
+		        "last_name": user.lname,
+		        "password": user.password,
+		        "password_confirmation": user.confirm_password
+    			}
+      	}
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+      	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	resolve(data)
+					})
+		  	})
+      },
+      onGoogleSignIn : function (accessToken) {
+      	var data = {
+      		"application_user": {
+      			"auth_data": {
+              "google": {
+               	"access_token": accessToken
+              }
+          	}
+      		}
+      	}
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+      	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	resolve(data)
+					})
+		  	})
       }
     }
   }])
 
 }
-},{"../lib/utilities/restfullservice.js":184,"../lib/utilities/utils.js":185}],361:[function(require,module,exports){
+},{"../lib/utilities/restfullservice.js":184,"../lib/utilities/utils.js":185}],364:[function(require,module,exports){
 var angular 						= require('angular')
 var ui_router 					= require('angular-ui-router')
 var angular_cookies 		= require('angular-cookies')
+var ngDraggable					= require('ngdraggable')
 
 /*************************************************************************
  * JS files required in Index.js
  *************************************************************************/
 var login 							= require('./components/js/login/login.js')
+var register						= require('./components/js/register/register.js')
 var dashboard 					= require('./components/js/dashboard/dashboard.js')
 var tasks 							= require('./components/js/tasks/tasks.js')
+var activate 						= require('./components/js/activate/activate.js')
 var config							= require('./config.js')
 var controller					= require('./controller.js')
 var factory							= require('./factory.js')
@@ -107801,21 +108807,22 @@ var run 								= require('./run.js')
 /*************************************************************************
  * Initializing Application Module
  *************************************************************************/
-var app 								= angular.module('matriarch', ['ui.router', 'ngCookies'])
+var app 								= angular.module('matriarch', ['ui.router', 'ngCookies', 'ngDraggable'])
 
 /*************************************************************************
  * Calling all JS files
  *************************************************************************/
 login(app)
+register(app)
 dashboard(app)
 tasks(app)
+activate(app)
 config(app)
 
 /*************************************************************************
  * Main Controller  
  *************************************************************************/
 controller(app)
-
 
 /*************************************************************************
  * Main factory
@@ -107826,15 +108833,23 @@ factory(app)
  * Run
  *************************************************************************/
 run(app)
-},{"./components/js/dashboard/dashboard.js":355,"./components/js/login/login.js":356,"./components/js/tasks/tasks.js":357,"./config.js":358,"./controller.js":359,"./factory.js":360,"./run.js":362,"angular":190,"angular-cookies":187,"angular-ui-router":188}],362:[function(require,module,exports){
+},{"./components/js/activate/activate.js":356,"./components/js/dashboard/dashboard.js":357,"./components/js/login/login.js":358,"./components/js/register/register.js":359,"./components/js/tasks/tasks.js":360,"./config.js":361,"./controller.js":362,"./factory.js":363,"./run.js":365,"angular":190,"angular-cookies":187,"angular-ui-router":188,"ngdraggable":197}],365:[function(require,module,exports){
 module.exports = function(app) {
-	app.run(['$rootScope', '$state', 'getFactory', '$cookies', function ($rootScope, $state, getFactory, $cookies) {		
+	app.run([
+		'$rootScope', 
+		'$state', 
+		'getFactory', 
+		'$cookies', 
+		'$location',
+		function ($rootScope, $state, getFactory, $cookies, $location) {		
 		$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
 			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth')))
 				event.preventDefault()
 			if(!angular.isUndefined($cookies.get('auth'))) 
 				getFactory.tasks()
+			if($location.path() === "/Activate" && !toState.views.data.requiredLogin && !$location.search().code && !$location.search().token)
+				event.preventDefault()
 		})
 	}])
 }
-},{}]},{},[361]);
+},{}]},{},[364]);

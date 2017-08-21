@@ -9,9 +9,13 @@ module.exports = function (app) {
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
 		      	$rootScope.array = []
-			      for(var i=0; i <= (data.objects.length - 1); i++) {    	
-			      	if($cookies.get('uid') === data.objects[i].user_reference)
-			      		$rootScope.array.push(data.objects[i])
+			      for(var i=0; i < data.objects.length; i++) {    	
+			      	if($cookies.get('uid') === data.objects[i].user_reference) {
+			      		$rootScope.array.unshift(data.objects[i])
+			      		$rootScope.array.sort(function(a, b) {							  
+								  return new Date(b.created_at) - new Date(a.created_at)
+								})
+			      	}
 			      }
 		      	$rootScope.$apply()
 	      })
@@ -19,33 +23,98 @@ module.exports = function (app) {
 		}
 	}])
 
-	app.factory('clickEvent',[ '$cookies', 'getFactory', function($cookies, getFactory) {
+	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
     return {
+    	isLogged : function () {
+    		if(angular.isDefined($cookies.get('auth')))
+    			return true
+    	},
       checkbox : function () {
-
+      	$rootScope.button = true	
       }, 
+      activate : function (token, uid) {
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+				return rest.restfullService(utils.getUrl('/application/users/' + uid + '/activate/' + token), 'GET', utils.getHeaders(), null)
+		    .then(function(data){     	
+		    	return data
+				})
+      },
       add : function (usertext) {
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 				utils.setHeader('content-type','application/json')
 				var data = {
 					object :  {
 						'user_reference' : $cookies.get('uid'),
-						'task_text' : usertext,
+							'task_text' : usertext,
 						'status' : false
 					}
 				}
-		    rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'POST', utils.getHeaders(), data)
+		    return rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'POST', utils.getHeaders(), data)
 		    .then(function(data){     	
 		    	getFactory.tasks()
+		    	return data
 				})
       },
-      delete : function () {      	
-      	var uid = ""
+      delete : function (uid) {      	
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
-      	rest.restfullService(utils.getUrl('/classes/tasks/objects?uid=' + uid), 'DELETE', utils.getHeaders(), data)
+      	return rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'DELETE', utils.getHeaders(), null)
 		    .then(function(data){     	
 		    	getFactory.tasks()
+		    	return data
 				})
+      },
+      update : function (uid,  body) {
+      	var data = {
+      		"object" : body
+      	}
+				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+		   	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'PUT', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	getFactory.tasks()
+			    	resolve(data)
+					})
+				})
+      },
+      signup : function(user) {
+      	var data = {
+      		"application_user": {
+		        "username" : user.username,
+		        "email": user.email,
+		        "first_name": user.fname,
+		        "last_name": user.lname,
+		        "password": user.password,
+		        "password_confirmation": user.confirm_password
+    			}
+      	}
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+      	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	resolve(data)
+					})
+		  	})
+      },
+      onGoogleSignIn : function (accessToken) {
+      	var data = {
+      		"application_user": {
+      			"auth_data": {
+              "google": {
+               	"access_token": accessToken
+              }
+          	}
+      		}
+      	}
+      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('content-type','application/json')
+      	return new Promise (function (resolve, reject) {
+	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)
+			    .then(function(data){     	
+			    	resolve(data)
+					})
+		  	})
       }
     }
   }])

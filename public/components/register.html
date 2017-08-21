@@ -1,4 +1,37 @@
 <div ui-view="navbar"></div>
-<div class="div-wrap">
-	<h2> Sadly we don't allow unknown life forms to directly Sign Up yet.</h2>
+<br>
+<div class="form">
+	<form ng-controller="registerApp" ng-submit="register()">
+	 	<div class="form-group">
+	    <label for="exampleInputFname">First Name</label>
+	    <input type="text" class="form-control" ng-model="user.fname" placeholder="What do people call you officially, other than a Idiot." required>
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputLname">Last Name</label>
+	    <input type="text" class="form-control" ng-model="user.lname" placeholder="What do people call your family officially, other than Idiots.">
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputUsername">User Name</label>
+	    <input type="text" class="form-control" ng-model="user.username" placeholder="UserName" required>
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputEmail">Email</label>
+	    <input type="text" class="form-control" ng-model="user.email" placeholder="Email" required>
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputPassword1">Password</label>
+	    <input type="password" class="form-control" ng-model="user.password" placeholder="Password" required>
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputPassword2">Confirm Password</label>
+	    <input type="password" class="form-control" ng-model="user.confirm_password" placeholder="Same password again you dummy!" required>
+	  </div>
+	  <div>
+	    <button type="submit" class="btn btn-success">
+	    	<span ng-show="registerButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+	    	<span>Register</span>
+	    </button>
+	  </div>
+	</form>
 </div>
+<div ui-view="footer"></div>

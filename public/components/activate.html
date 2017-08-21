@@ -1,0 +1,9 @@
+<div ui-view="navbar"></div>
+<div ng-controller="activate">
+	<center>
+		<div ng-if="alert" class="alert alert-danger" role="alert">{{ alertText }}</div>
+		<a href="" ng-click="activate()">Click here</a> to be activated
+		<span ng-show="activateButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+	</center>
+</div>
+<div ui-view="footer"></div>

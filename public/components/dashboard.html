@@ -1,8 +1,15 @@
+<!-- <div ng-controller="dashboard" ></div> -->
 <div ui-view="navbar"></div>
 <div class="text-center" ng-controller="dashboard">
-  <a ng-hide="loggedInAs" href=""> Welcome {{ fname }} {{ lname }}</a>
-	<h2>{{ title | uppercase }}</h2>
+  <p ng-hide="loggedInAs" style="color: black;">Welcome</p>
+	<h2>{{ title | uppercase }} 
+		<span ng-controller="task" ng-show="updateButtonSpin">
+				<i class="glyphicon glyphicon-refresh spinning"></i>
+				<p > {{ theUpdateText }} </p>
+		</span>
+	</h2> 
 	<div ui-view="task">
 	</div>
 	<hr>
 </div>
+<div ui-view="footer"></div>

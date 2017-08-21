@@ -1,9 +1,19 @@
-<div ng-controller="task"> 
-	<input type="text" name="addTask" ng-model="inputText"> <br> <br>
-	<button class="btn btn-success" ng-click="add(inputText)">Add</button>
-	<a href="#" ng-hide="button">{{ buttons.edit }}</a> 
-	<a href="#" ng-hide="button">{{ buttons.delete }}</a>  
-	<hr>	
-	<ul repeat>
-	</ul>
+<div ng-controller="task" id="theTaskDiv"> 
+<br>
+<br>	
+	<div>
+		<span>
+			<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" placeholder="Add task here..."> 
+	    <span ng-show="taskButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+			<br><br>
+			<button id="theAddTaskButton" class="btn btn-success" ng-click="add(inputText)">
+				<span>Add</span>
+			</button>
+		</span> 
+	</div>
+	<hr>
+	<div id="theTaskRepeatDiv">	
+		<ul repeat class="theTasksUL">
+		</ul>
+	</div>
 </div>

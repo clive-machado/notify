@@ -1,0 +1,33 @@
+footer {
+	position: relative;	
+	bottom: 3px;
+	width:100%;
+	background-color: white;
+}
+
+.social {
+	transition-duration: 0.5s;
+	color: #000000;
+  height: 40px;
+  width: 40px;
+  border-radius: 3px;
+}
+.fa-3x {
+  border: 1px solid black;
+  font-size: 18px;
+  padding: 10px	;
+  margin: 7px;
+  opacity: inherit;
+}
+#social-fb:hover {
+  color: #3B5998;
+}
+#social-tw:hover {
+  color: #4099FF;
+}
+#social-gp:hover {
+  color: #d34836;
+}
+/*.fa-3x:hover{
+	background-color: rgba(0, 0, 0, 1);
+}*/
