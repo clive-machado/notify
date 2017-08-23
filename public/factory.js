@@ -4,15 +4,32 @@ var utils = require('../lib/utilities/utils.js')
 module.exports = function (app) {
 	app.factory('getFactory',[ '$rootScope', '$cookies', function ($rootScope, $cookies) {
 		return { 
-			eachTasks : function () {
-
+			eachCheckTasks : function (index, body, uid) {
+				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'GET', utils.getHeaders(), null)
+	      .then(function(data) {
+					if(body.status === true){
+						$rootScope.array.splice(index, 1)
+						$rootScope.checkedArray.splice(0, 0, data.object)
+					}
+					if(body.status === false){
+						$rootScope.checkedArray.splice(index, 1)	
+						$rootScope.array.splice(0, 0, data.object)
+					}
+    			$rootScope.checkedArray.sort(function(a, b) {							  
+				  	return new Date(b.created_at) - new Date(a.created_at)
+					})
+					$rootScope.array.sort(function(a, b) {							  
+					  return new Date(b.created_at) - new Date(a.created_at)
+					})
+					$rootScope.$apply()
+				})
 			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
-						$rootScope.mainPageSpinner = false
 		      	$rootScope.array = []
 		      	$rootScope.checkedArray = []
 			      for(var i=0; i < data.objects.length; i++) {    	
@@ -37,7 +54,7 @@ module.exports = function (app) {
 		}
 	}])
 
-	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
+	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', '$timeout', function($cookies, getFactory, $rootScope, $timeout) {
     return {
     	isKeyEnter : function (event) {
 	      if(event.keyCode === 13)
@@ -89,9 +106,11 @@ module.exports = function (app) {
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 		   	return new Promise (function (resolve, reject) {
 	      	rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'PUT', utils.getHeaders(), data)
-			    .then(function(data){     	
-			    	getFactory.tasks()
+			    .then(function(data){  
 			    	resolve(data)
+			 	    // $timeout(function() {
+			 	    // }, 1000)   	
+			    	getFactory.eachCheckTasks(index, body, data.object.uid)
 					})
 				})
       },

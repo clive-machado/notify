@@ -108416,22 +108416,35 @@ module.exports = function (app) {
     '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout) {
       var userClicks = 0
+
+      $scope.checkAll = function () {
+        $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.array.length; i++) {
+          $scope.toCheck($rootScope.array[i].uid, true, $rootScope.array[i].task_text)
+        }
+      }
+
+      $scope.uncheckAll = function () {
+       $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.checkedArray.length; i++) {
+          $scope.toCheck($rootScope.checkedArray[i].uid, false, $rootScope.checkedArray[i].task_text)
+        } 
+      }
+
       $scope.areTheyChecked = function () {
-        $timeout(function() {
-          var checkedArr = $rootScope.checkedArray
-          $scope.emptyMessage = true
-          if(angular.isDefined(checkedArr)) {
-            if(checkedArr.length <= 0 ){
-              $scope.isAnyChecked = false
-            }
-            if(checkedArr.length >= 1 ){
-              $scope.isAnyChecked = true
-            }
+        var checkedArr = $rootScope.checkedArray
+        $scope.emptyMessage = true
+        if(angular.isDefined(checkedArr)) {
+          if(checkedArr.length <= 0 ){
+            $scope.isAnyChecked = false
           }
-          if(angular.isUndefined(checkedArr)) {
-              $scope.isAnyChecked = false
+          if(checkedArr.length >= 1 ){
+            $scope.isAnyChecked = true
           }
-        }, 1000);
+        }
+        if(angular.isUndefined(checkedArr)) {
+            $scope.isAnyChecked = false
+        }
       }
 
       $scope.clearChecked = function() {
@@ -108478,18 +108491,19 @@ module.exports = function (app) {
         }
       }
 
-      $scope.toCheck = function (uid, status, task) {
+      $scope.toCheck = function (uid, status, task, index) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
             var body = {
               "status" : status
             }
             $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
-            $scope.onUpdateCall(uid, body)
+            $scope.onUpdateCall(uid, body, index)
             .then(function(data) {
              $scope.areTheyChecked()
-              if(status === true)
+              if(status === true) {
                 $scope.notify.noteTemplate("Task Completed", task, "info", "fa fa-flag-checkered")
+              }
               if (status === false)
                 $scope.notify.noteTemplate("Task Unchecked", task, "info", "fa fa-times")
             })
@@ -108501,7 +108515,6 @@ module.exports = function (app) {
       }
 
       $scope.makeTaskTextEditor = function (uid, text, indexOfElement) {
-        console.log(indexOfElement)
         var isUserLogged = clickEvent.isLogged()
           if(text === "") {
             $scope.notify.noteTemplate("Error!", "Can't save empty task!", "error", "fa fa-fa-exclamation-triangle")
@@ -108545,10 +108558,10 @@ module.exports = function (app) {
           }
       }
 
-      $scope.onUpdateCall = function (uid, body) {
+      $scope.onUpdateCall = function (uid, body, index) {
         var updateCount = 0
         if(updateCount <= 50) {
-          return clickEvent.update(uid, body)
+          return clickEvent.update(uid, body, index)
         }
         return
       }
@@ -108764,15 +108777,32 @@ var utils = require('../lib/utilities/utils.js')
 module.exports = function (app) {
 	app.factory('getFactory',[ '$rootScope', '$cookies', function ($rootScope, $cookies) {
 		return { 
-			eachTasks : function () {
-
+			eachCheckTasks : function (index, body, uid) {
+				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'GET', utils.getHeaders(), null)
+	      .then(function(data) {
+					if(body.status === true){
+						$rootScope.array.splice(index, 1)
+						$rootScope.checkedArray.splice(0, 0, data.object)
+					}
+					if(body.status === false){
+						$rootScope.checkedArray.splice(index, 1)	
+						$rootScope.array.splice(0, 0, data.object)
+					}
+    			$rootScope.checkedArray.sort(function(a, b) {							  
+				  	return new Date(b.created_at) - new Date(a.created_at)
+					})
+					$rootScope.array.sort(function(a, b) {							  
+					  return new Date(b.created_at) - new Date(a.created_at)
+					})
+					$rootScope.$apply()
+				})
 			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
-						$rootScope.mainPageSpinner = false
 		      	$rootScope.array = []
 		      	$rootScope.checkedArray = []
 			      for(var i=0; i < data.objects.length; i++) {    	
@@ -108797,7 +108827,7 @@ module.exports = function (app) {
 		}
 	}])
 
-	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
+	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', '$timeout', function($cookies, getFactory, $rootScope, $timeout) {
     return {
     	isKeyEnter : function (event) {
 	      if(event.keyCode === 13)
@@ -108849,9 +108879,11 @@ module.exports = function (app) {
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
 		   	return new Promise (function (resolve, reject) {
 	      	rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'PUT', utils.getHeaders(), data)
-			    .then(function(data){     	
-			    	getFactory.tasks()
+			    .then(function(data){  
 			    	resolve(data)
+			 	    // $timeout(function() {
+			 	    // }, 1000)   	
+			    	getFactory.eachCheckTasks(index, body, data.object.uid)
 					})
 				})
       },

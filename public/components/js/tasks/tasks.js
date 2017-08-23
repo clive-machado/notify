@@ -8,22 +8,35 @@ module.exports = function (app) {
     '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout) {
       var userClicks = 0
+
+      $scope.checkAll = function () {
+        $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.array.length; i++) {
+          $scope.toCheck($rootScope.array[i].uid, true, $rootScope.array[i].task_text)
+        }
+      }
+
+      $scope.uncheckAll = function () {
+       $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.checkedArray.length; i++) {
+          $scope.toCheck($rootScope.checkedArray[i].uid, false, $rootScope.checkedArray[i].task_text)
+        } 
+      }
+
       $scope.areTheyChecked = function () {
-        $timeout(function() {
-          var checkedArr = $rootScope.checkedArray
-          $scope.emptyMessage = true
-          if(angular.isDefined(checkedArr)) {
-            if(checkedArr.length <= 0 ){
-              $scope.isAnyChecked = false
-            }
-            if(checkedArr.length >= 1 ){
-              $scope.isAnyChecked = true
-            }
+        var checkedArr = $rootScope.checkedArray
+        $scope.emptyMessage = true
+        if(angular.isDefined(checkedArr)) {
+          if(checkedArr.length <= 0 ){
+            $scope.isAnyChecked = false
           }
-          if(angular.isUndefined(checkedArr)) {
-              $scope.isAnyChecked = false
+          if(checkedArr.length >= 1 ){
+            $scope.isAnyChecked = true
           }
-        }, 1000);
+        }
+        if(angular.isUndefined(checkedArr)) {
+            $scope.isAnyChecked = false
+        }
       }
 
       $scope.clearChecked = function() {
@@ -70,18 +83,19 @@ module.exports = function (app) {
         }
       }
 
-      $scope.toCheck = function (uid, status, task) {
+      $scope.toCheck = function (uid, status, task, index) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
             var body = {
               "status" : status
             }
             $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
-            $scope.onUpdateCall(uid, body)
+            $scope.onUpdateCall(uid, body, index)
             .then(function(data) {
              $scope.areTheyChecked()
-              if(status === true)
+              if(status === true) {
                 $scope.notify.noteTemplate("Task Completed", task, "info", "fa fa-flag-checkered")
+              }
               if (status === false)
                 $scope.notify.noteTemplate("Task Unchecked", task, "info", "fa fa-times")
             })
@@ -93,7 +107,6 @@ module.exports = function (app) {
       }
 
       $scope.makeTaskTextEditor = function (uid, text, indexOfElement) {
-        console.log(indexOfElement)
         var isUserLogged = clickEvent.isLogged()
           if(text === "") {
             $scope.notify.noteTemplate("Error!", "Can't save empty task!", "error", "fa fa-fa-exclamation-triangle")
@@ -137,10 +150,10 @@ module.exports = function (app) {
           }
       }
 
-      $scope.onUpdateCall = function (uid, body) {
+      $scope.onUpdateCall = function (uid, body, index) {
         var updateCount = 0
         if(updateCount <= 50) {
-          return clickEvent.update(uid, body)
+          return clickEvent.update(uid, body, index)
         }
         return
       }

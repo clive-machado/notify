@@ -20,11 +20,6 @@
   border-bottom: 1px solid black; 
 }
 
-.theCheckedTaskUL .strikeElement {
-	text-decoration: line-through;
-	color: lightgrey;
-}
-
 .theTasksWrapper{
 	background: rgba(214, 201, 162, 0.19);
 	width: 100%; 

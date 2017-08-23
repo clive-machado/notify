@@ -30,17 +30,20 @@
   border-bottom: 2px solid #3a9fe5;
 }
 
-#theClearCheckedButton {
+.checkButtons {
 	background: transparent;
   border: 0;
   outline: 0;
+  float: right;
 }
 
-#theClearCheckedButton:hover {
+.checkButtons:hover {
 	border-bottom: 2px solid #3a9fe5;
 	color: rgba(0, 57, 86, 0.78);	
 }
 
-#NoTaskCompleted {
-	
+.theCheckedTaskUL .strikeElement {
+	text-decoration: line-through;
+	color: lightgrey;
 }
+
