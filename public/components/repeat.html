@@ -1,17 +1,18 @@
-<li class="theTasksLi" ng-repeat="arr in array" ng-drop="true" ng-drop-success="onDropComplete($index, $data,$event)">
+<li class="theTasksLi" ng-drop="true" ng-drop-success="onDropComplete($index, $data,$event)">
+<!-- 	<div class="theDivSecondInsideLi" ng-drag-data="arr" ng-drag="true" ng-center-anchor="true">
+	...
+	</div> -->
 	<div id="theDivFirstInsideLi">	
 		<span id="theCheckBoxSpan">
-			<input id="checkBox" type="checkbox" name="taskCheckbox" ng-model="arr.status" ng-change="toCheck(arr.uid, arr.status)">
+			<input id="checkBox" type="checkbox" name="taskCheckbox" ng-model="arr.status" ng-change="toCheck(arr.uid, arr.status, arr.task_text)">
 		</span>
 		<span id="theTaskTextEditorSpan">
-			<input id="theTaskTextEditor" type="text" value="{{ arr.task_text }}" ng-model="arr.task_text" ng-blur="makeTaskTextEditor(arr.uid, arr.task_text)">
+			<input id="theTaskTextEditor" class="text-center strikeElement" type="text" value="{{ arr.task_text }}" ng-model="arr.task_text" ng-blur="makeTaskTextEditor(arr.uid, arr.task_text, $index)"> 
 		</span>
 		<span id="theDeleteButtonSpan">
-			<button id="theDeleteButton" ng-model="arr.task_text" ng-click="toDeleteTask(arr.uid)">
+			<button id="theDeleteButton" class="btn" ng-model="arr.task_text" ng-click="toDeleteTask(arr.uid, arr.task_text)">
 				<i class="fa fa-trash"></i>
 			</button> 
 		</span>	
-	</div>
-	<div class="theDivSecondInsideLi" ng-drag-data="arr" ng-drag="true" ng-center-anchor="true">
 	</div>
 </li>

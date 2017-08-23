@@ -108230,23 +108230,30 @@ module.exports = function(app) {
 		function ($scope, $state, $rootScope, $cookies) {
 		$scope.navOne = true 
 		$scope.navTwo = false	
+		$scope.loggedInAs = false
 		$scope.navButtonLogout = 'Logout'	
 		$scope.title = $cookies.get('fname') + " " + $cookies.get('lname')
-		$scope.loggedInAs = false
 		$scope.email = $cookies.get('email')
-		$scope.logout = function() {
+		$scope.logout = function() { 
 			$rootScope.array = []
+			$rootScope.checkedArray = [] 
       $cookies.remove('auth')
       $cookies.remove('uid')
       $cookies.remove('fname')
       $cookies.remove('lname')
       $cookies.remove('email')
-      new PNotify({
+      var notice = new PNotify({
         title: 'User Logged out',
         type: 'success',
-        animate_speed: 'fast'
-      });
-			$state.go('login')
+        animate_speed: 'fast',
+	      buttons: {
+	        sticker: true
+	      }
+      })
+      notice.get().click(function() {
+	      notice.remove()
+	    })
+			$state.go('login')	
 		}
     $scope.onDropComplete = function(index, data, evt) {
       var otherObj = $rootScope.array[index]
@@ -108279,10 +108286,13 @@ module.exports = function (app) {
         GoogleAuth.signIn().then(function(googleUser) {
           clickEvent.onGoogleSignIn(googleUser.Zi.access_token)
           .then(function(data){
-            new PNotify({
+            var notice = new PNotify({
                 title: 'User logged In',
                 type: 'success',
                 animate_speed: 'fast'
+            })
+            notice.get().click(function() {
+              notice.remove()
             })
             $cookies.put('auth', data.application_user.authtoken)
             $cookies.put('uid', data.application_user.uid)
@@ -108317,13 +108327,14 @@ module.exports = function (app) {
       request(opt, function (err, res, body) {
         if (typeof body == "string"){
           body = JSON.parse(body)
-          if(body.error_message)
+          if(body.error_message){
             new PNotify({
               title: 'Oh No!',
               text: body.error_message,
               type: 'error',
               animate_speed: 'fast'
             });
+          }
           if(body.application_user) {
             new PNotify({
                 title: 'Success!',
@@ -108336,6 +108347,7 @@ module.exports = function (app) {
             $cookies.put('lname', body.application_user.last_name)
             $cookies.put('email', body.application_user.email)
             $state.go('dashboard')
+            PNotify.removeAll()
           }
           $scope.loginButtonSpin = false
           $scope.$apply()
@@ -108401,81 +108413,135 @@ module.exports = function (app) {
     '$rootScope', 
     'clickEvent', 
     '$cookies',
-    '$timeout', 
+    '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout) {
-      $scope.toDeleteTask = function (uid) {
-        var isUserLogged = clickEvent.isLogged()
-          if(isUserLogged === true) {
-            clickEvent.delete(uid)
-            .then(function(data){
-              $scope.delete()
-            })
+      var userClicks = 0
+      $scope.areTheyChecked = function () {
+        $timeout(function() {
+          var checkedArr = $rootScope.checkedArray
+          $scope.emptyMessage = true
+          if(angular.isDefined(checkedArr)) {
+            if(checkedArr.length <= 0 ){
+              $scope.isAnyChecked = false
+            }
+            if(checkedArr.length >= 1 ){
+              $scope.isAnyChecked = true
+            }
           }
-          else {
-            $scope.error()
+          if(angular.isUndefined(checkedArr)) {
+              $scope.isAnyChecked = false
           }
+        }, 1000);
       }
 
-      $scope.toCheck = function (uid, status) {
+      $scope.clearChecked = function() {
+        $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.checkedArray.length; i++) {
+          $scope.toDeleteTask($rootScope.checkedArray[i].uid, $rootScope.checkedArray[i].task_text)
+        }
+      }
+
+      $scope.getActiveOrCompleted = function (param) {
+        if(param === 'hello') {
+          $scope.istheCheckedArray = true
+          $scope.istheUnCheckedArray = false
+        }
+        if(param === 'hell') {
+          $scope.istheUnCheckedArray = true
+          $scope.istheCheckedArray = false
+        }
+        if(param === '') {
+          $scope.istheUnCheckedArray = false
+          $scope.istheCheckedArray = false
+        }
+      }
+
+      $scope.keyEnter = function (event) {
+        if(clickEvent.isKeyEnter(event) === true)
+          $scope.add($scope.inputText)
+      }
+
+      $scope.toDeleteTask = function (uid, task) {
+        var isUserLogged = clickEvent.isLogged()
+        if(isUserLogged === true) {
+          $scope.syncButtonSpin = true
+          clickEvent.delete(uid)
+          .then(function(data){
+            $scope.syncButtonSpin = false
+            $scope.notify.noteTemplate("Task Deleted", task, "", "fa fa-trash-o")
+            $scope.areTheyChecked()
+          })
+        }
+        else {
+          $scope.go('login')
+          $scope.notify.noteTemplate("Error", "Could not delete task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
+        }
+      }
+
+      $scope.toCheck = function (uid, status, task) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
             var body = {
               "status" : status
             }
+            $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
             $scope.onUpdateCall(uid, body)
             .then(function(data) {
-              $scope.update()
+             $scope.areTheyChecked()
+              if(status === true)
+                $scope.notify.noteTemplate("Task Completed", task, "info", "fa fa-flag-checkered")
+              if (status === false)
+                $scope.notify.noteTemplate("Task Unchecked", task, "info", "fa fa-times")
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not save, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
 
-      $scope.makeTaskTextEditor = function (uid, data) {
+      $scope.makeTaskTextEditor = function (uid, text, indexOfElement) {
+        console.log(indexOfElement)
         var isUserLogged = clickEvent.isLogged()
+          if(text === "") {
+            $scope.notify.noteTemplate("Error!", "Can't save empty task!", "error", "fa fa-fa-exclamation-triangle")
+            return 
+          }
           if(isUserLogged === true) {
-            if(data === true) {
-              new PNotify({
-                title: 'Error!',
-                text: 'Empty Input',
-                type: 'error'
-              });
-              return 
-            }
             var body = {
-              "task_text" : data
+              "task_text" : text
             }
-            $scope.onUpdateCall(uid, body)
+            $scope.syncButtonSpin = true
+            $scope.onUpdateCall(uid, body, indexOfElement)
             .then(function(data) {
-              $scope.update()
+              $scope.syncButtonSpin = false
+              $scope.notify.noteTemplate("Updated Task", text, "info", "fa fa-pencil-square-o")
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not update task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
       
       $scope.add = function(usertext) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
-           if(angular.isString(usertext) != true) {
-              new PNotify({
-                title: 'Error!',
-                text: 'Empty Input',
-                type: 'error'
-              });
+           if(usertext === "" || angular.isUndefined(usertext)) { 
+              $scope.notify.noteTemplate("Error!", "Empty! Add something dummy!", "error", "fa fa-fa-exclamation-triangle")
               return 
             }
             $scope.taskButtonSpin = true
             clickEvent.add(usertext)
             .then(function(data) {
-              $scope.success()
+              $scope.notify.noteTemplate("Task Added", usertext, "success", "fa fa-check-square-o")
               $scope.taskButtonSpin = false
+              $scope.inputText = ""
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not Add Task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
 
@@ -108487,46 +108553,59 @@ module.exports = function (app) {
         return
       }
     
-      $scope.success = function () {
-        new PNotify({
-          title: 'Added Task',
-          type: 'success',
-          animate_speed: 'fast'
-        });
-      }
-
-      $scope.update = function () {
-        new PNotify({
-            title: 'Updated',
-            type: 'info',
-            animate_speed: 'fast'
-        });
-      }
-
-      $scope.error = function () {
-        new PNotify({
-          title: 'Error!',
-          text: 'Something went wrong',
-          type: 'error'
-        });
-      }
-      
-      $scope.delete = function () {
-          new PNotify({
-            title: 'Task Deleted!',
-            animate_speed: 'fast'
-          });
+      $scope.notify = {
+        noteTemplate : function (noteTitle, noteText, noteType, noteIcon) {
+          if (userClicks < 4) {
+            var notice = new PNotify({
+              title: noteTitle,
+              text: noteText,
+              type: noteType,
+              icon: noteIcon,
+              animate_speed: 'fast',
+              buttons: {
+                sticker: true
+              }
+            })
+            notice.get().click(function() {
+              notice.remove()
+            })
+            $timeout(function() {
+              PNotify.removeAll()
+            }, 1000)
+            userClicks++
+          }
+          else {
+            userClicks = 0   
+            PNotify.removeAll()
+          }
         }
+      }
     }])
-
  
   app.directive('repeat', function () {
     return {
       templateUrl: '/components/repeat.html'
     }
   })
-}
 
+
+  app.directive('ngEnter', function () {
+    return function () {
+      
+    }
+    // return function (scope, element, attrs) {
+    //     element.bind("keydown keypress", function (event) {
+    //         if(event.which === 13) {
+    //           scope.$apply(function (){
+    //               scope.$eval(attrs.myEnter)
+    //           })
+    //           event.preventDefault()
+    //         }
+    //     })
+    // }
+  })
+
+}
 },{}],361:[function(require,module,exports){
 module.exports = function (app) {
 	app.config(states)
@@ -108564,7 +108643,7 @@ var state = {
 		}	
 	},
 	login : {
-		url : '/Login',
+		url : '/login',
 		views: 
 		{ 
 			'' : {
@@ -108582,7 +108661,7 @@ var state = {
 		}
 	},
 	register : {
-		url : '/Register',
+		url : '/register',
 		views: 
 		{ 
 			'' : {
@@ -108600,7 +108679,7 @@ var state = {
 		}
 	},
 	dashboard : {
-		url : '/Dashboard',
+		url : '/dashboard',
 		views: { 
 			'' : 
 			{
@@ -108650,13 +108729,29 @@ module.exports = function(app) {
 		$scope.homeHeading = "Welcome to the Gaurdian of the Notes"
 		$scope.bannerline = "We are from the Galaxy Galafray our services will help you build things your slimy little brain forgets. So go ahead and Sign In." 
 		$scope.navButtonOne = function() {
-			if(angular.isUndefined($cookies.get('auth')))
+			if(angular.isUndefined($cookies.get('auth'))) {
+				$scope.navOne = false
+				$scope.navButtonOneRoute = "login"
 				return 'Login'
-			else
-				return 'Dashboard'			
-		}		
+			}
+			if(angular.isDefined($cookies.get('auth'))) {
+				$scope.navOne = false
+				$scope.navButtonOneRoute = "dashboard"
+				return 'Dashboard'
+			}
+		}			
 
-		$scope.navButtonTwo = 'Register'
+		$scope.navButtonTwo = function () {
+			if(angular.isUndefined($cookies.get('auth'))){
+				// $scope.navOne = false
+				$scope.navButtonTwoRoute = "register"
+				return 'Register'
+			}
+			if(angular.isDefined($cookies.get('auth'))) {
+				$scope.navOne = true
+			}
+		}
+
 		$scope.loggedInAs = true
 		$scope.navOne = false
 		$scope.navTwo = true
@@ -108669,17 +108764,31 @@ var utils = require('../lib/utilities/utils.js')
 module.exports = function (app) {
 	app.factory('getFactory',[ '$rootScope', '$cookies', function ($rootScope, $cookies) {
 		return { 
+			eachTasks : function () {
+
+			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
+						$rootScope.mainPageSpinner = false
 		      	$rootScope.array = []
+		      	$rootScope.checkedArray = []
 			      for(var i=0; i < data.objects.length; i++) {    	
 			      	if($cookies.get('uid') === data.objects[i].user_reference) {
-			      		$rootScope.array.unshift(data.objects[i])
-			      		$rootScope.array.sort(function(a, b) {							  
-								  return new Date(b.created_at) - new Date(a.created_at)
-								})
+			      		if(data.objects[i].status === true){
+			      			$rootScope.checkedArray.unshift(data.objects[i])
+			      			$rootScope.checkedArray.sort(function(a, b) {							  
+								  	return new Date(b.created_at) - new Date(a.created_at)
+									})
+			      		}
+			      		else {
+				      		$rootScope.array.unshift(data.objects[i])
+				      		$rootScope.array.sort(function(a, b) {							  
+									  return new Date(b.created_at) - new Date(a.created_at)
+									})
+			      		}
 			      	}
 			      }
 		      	$rootScope.$apply()
@@ -108690,6 +108799,10 @@ module.exports = function (app) {
 
 	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
     return {
+    	isKeyEnter : function (event) {
+	      if(event.keyCode === 13)
+        	return true
+    	},
     	isLogged : function () {
     		if(angular.isDefined($cookies.get('auth')))
     			return true
@@ -108729,7 +108842,7 @@ module.exports = function (app) {
 		    	return data
 				})
       },
-      update : function (uid,  body) {
+      update : function (uid,  body, index) {
       	var data = {
       		"object" : body
       	}
@@ -108843,8 +108956,10 @@ module.exports = function(app) {
 		'$location',
 		function ($rootScope, $state, getFactory, $cookies, $location) {		
 		$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
-			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth')))
+			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth'))) {
+				$state.go('login')
 				event.preventDefault()
+			}
 			if(!angular.isUndefined($cookies.get('auth'))) 
 				getFactory.tasks()
 			if($location.path() === "/Activate" && !toState.views.data.requiredLogin && !$location.search().code && !$location.search().token)

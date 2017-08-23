@@ -5,81 +5,135 @@ module.exports = function (app) {
     '$rootScope', 
     'clickEvent', 
     '$cookies',
-    '$timeout', 
+    '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout) {
-      $scope.toDeleteTask = function (uid) {
-        var isUserLogged = clickEvent.isLogged()
-          if(isUserLogged === true) {
-            clickEvent.delete(uid)
-            .then(function(data){
-              $scope.delete()
-            })
+      var userClicks = 0
+      $scope.areTheyChecked = function () {
+        $timeout(function() {
+          var checkedArr = $rootScope.checkedArray
+          $scope.emptyMessage = true
+          if(angular.isDefined(checkedArr)) {
+            if(checkedArr.length <= 0 ){
+              $scope.isAnyChecked = false
+            }
+            if(checkedArr.length >= 1 ){
+              $scope.isAnyChecked = true
+            }
           }
-          else {
-            $scope.error()
+          if(angular.isUndefined(checkedArr)) {
+              $scope.isAnyChecked = false
           }
+        }, 1000);
       }
 
-      $scope.toCheck = function (uid, status) {
+      $scope.clearChecked = function() {
+        $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
+        for(var i = 0; i < $rootScope.checkedArray.length; i++) {
+          $scope.toDeleteTask($rootScope.checkedArray[i].uid, $rootScope.checkedArray[i].task_text)
+        }
+      }
+
+      $scope.getActiveOrCompleted = function (param) {
+        if(param === 'hello') {
+          $scope.istheCheckedArray = true
+          $scope.istheUnCheckedArray = false
+        }
+        if(param === 'hell') {
+          $scope.istheUnCheckedArray = true
+          $scope.istheCheckedArray = false
+        }
+        if(param === '') {
+          $scope.istheUnCheckedArray = false
+          $scope.istheCheckedArray = false
+        }
+      }
+
+      $scope.keyEnter = function (event) {
+        if(clickEvent.isKeyEnter(event) === true)
+          $scope.add($scope.inputText)
+      }
+
+      $scope.toDeleteTask = function (uid, task) {
+        var isUserLogged = clickEvent.isLogged()
+        if(isUserLogged === true) {
+          $scope.syncButtonSpin = true
+          clickEvent.delete(uid)
+          .then(function(data){
+            $scope.syncButtonSpin = false
+            $scope.notify.noteTemplate("Task Deleted", task, "", "fa fa-trash-o")
+            $scope.areTheyChecked()
+          })
+        }
+        else {
+          $scope.go('login')
+          $scope.notify.noteTemplate("Error", "Could not delete task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
+        }
+      }
+
+      $scope.toCheck = function (uid, status, task) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
             var body = {
               "status" : status
             }
+            $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")    
             $scope.onUpdateCall(uid, body)
             .then(function(data) {
-              $scope.update()
+             $scope.areTheyChecked()
+              if(status === true)
+                $scope.notify.noteTemplate("Task Completed", task, "info", "fa fa-flag-checkered")
+              if (status === false)
+                $scope.notify.noteTemplate("Task Unchecked", task, "info", "fa fa-times")
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not save, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
 
-      $scope.makeTaskTextEditor = function (uid, data) {
+      $scope.makeTaskTextEditor = function (uid, text, indexOfElement) {
+        console.log(indexOfElement)
         var isUserLogged = clickEvent.isLogged()
+          if(text === "") {
+            $scope.notify.noteTemplate("Error!", "Can't save empty task!", "error", "fa fa-fa-exclamation-triangle")
+            return 
+          }
           if(isUserLogged === true) {
-            if(data === true) {
-              new PNotify({
-                title: 'Error!',
-                text: 'Empty Input',
-                type: 'error'
-              });
-              return 
-            }
             var body = {
-              "task_text" : data
+              "task_text" : text
             }
-            $scope.onUpdateCall(uid, body)
+            $scope.syncButtonSpin = true
+            $scope.onUpdateCall(uid, body, indexOfElement)
             .then(function(data) {
-              $scope.update()
+              $scope.syncButtonSpin = false
+              $scope.notify.noteTemplate("Updated Task", text, "info", "fa fa-pencil-square-o")
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not update task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
       
       $scope.add = function(usertext) {
         var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
-           if(angular.isString(usertext) != true) {
-              new PNotify({
-                title: 'Error!',
-                text: 'Empty Input',
-                type: 'error'
-              });
+           if(usertext === "" || angular.isUndefined(usertext)) { 
+              $scope.notify.noteTemplate("Error!", "Empty! Add something dummy!", "error", "fa fa-fa-exclamation-triangle")
               return 
             }
             $scope.taskButtonSpin = true
             clickEvent.add(usertext)
             .then(function(data) {
-              $scope.success()
+              $scope.notify.noteTemplate("Task Added", usertext, "success", "fa fa-check-square-o")
               $scope.taskButtonSpin = false
+              $scope.inputText = ""
             })
           }
           else {
-            $scope.error()
+            $scope.go('login')
+            $scope.notify.noteTemplate("Error!", "Could not Add Task, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
           }
       }
 
@@ -91,42 +145,56 @@ module.exports = function (app) {
         return
       }
     
-      $scope.success = function () {
-        new PNotify({
-          title: 'Added Task',
-          type: 'success',
-          animate_speed: 'fast'
-        });
-      }
-
-      $scope.update = function () {
-        new PNotify({
-            title: 'Updated',
-            type: 'info',
-            animate_speed: 'fast'
-        });
-      }
-
-      $scope.error = function () {
-        new PNotify({
-          title: 'Error!',
-          text: 'Something went wrong',
-          type: 'error'
-        });
-      }
-      
-      $scope.delete = function () {
-          new PNotify({
-            title: 'Task Deleted!',
-            animate_speed: 'fast'
-          });
+      $scope.notify = {
+        noteTemplate : function (noteTitle, noteText, noteType, noteIcon) {
+          if (userClicks < 4) {
+            var notice = new PNotify({
+              title: noteTitle,
+              text: noteText,
+              type: noteType,
+              icon: noteIcon,
+              animate_speed: 'fast',
+              buttons: {
+                sticker: true
+              }
+            })
+            notice.get().click(function() {
+              notice.remove()
+            })
+            $timeout(function() {
+              PNotify.removeAll()
+            }, 1000)
+            userClicks++
+          }
+          else {
+            userClicks = 0   
+            PNotify.removeAll()
+          }
         }
+      }
     }])
-
  
   app.directive('repeat', function () {
     return {
       templateUrl: '/components/repeat.html'
     }
   })
+
+
+  app.directive('ngEnter', function () {
+    return function () {
+      
+    }
+    // return function (scope, element, attrs) {
+    //     element.bind("keydown keypress", function (event) {
+    //         if(event.which === 13) {
+    //           scope.$apply(function (){
+    //               scope.$eval(attrs.myEnter)
+    //           })
+    //           event.preventDefault()
+    //         }
+    //     })
+    // }
+  })
+
 }

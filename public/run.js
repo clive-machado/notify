@@ -7,8 +7,10 @@ module.exports = function(app) {
 		'$location',
 		function ($rootScope, $state, getFactory, $cookies, $location) {		
 		$rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {	
-			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth')))
+			if(toState.views.data.requiredLogin && angular.isUndefined($cookies.get('auth'))) {
+				$state.go('login')
 				event.preventDefault()
+			}
 			if(!angular.isUndefined($cookies.get('auth'))) 
 				getFactory.tasks()
 			if($location.path() === "/Activate" && !toState.views.data.requiredLogin && !$location.search().code && !$location.search().token)

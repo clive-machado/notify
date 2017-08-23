@@ -34,7 +34,7 @@ var state = {
 		}	
 	},
 	login : {
-		url : '/Login',
+		url : '/login',
 		views: 
 		{ 
 			'' : {
@@ -52,7 +52,7 @@ var state = {
 		}
 	},
 	register : {
-		url : '/Register',
+		url : '/register',
 		views: 
 		{ 
 			'' : {
@@ -70,7 +70,7 @@ var state = {
 		}
 	},
 	dashboard : {
-		url : '/Dashboard',
+		url : '/dashboard',
 		views: { 
 			'' : 
 			{

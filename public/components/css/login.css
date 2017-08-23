@@ -4,6 +4,52 @@
   margin: 0 auto;
 }
 
+.theLoginWrapper {
+  background: url(/components/img/login.jpg) no-repeat center center fixed;
+  background-size: cover;
+  animation: fadein 1s linear;
+}
+
+.theLoginFormWrapper {
+  background: white;
+  border-bottom-width: 30px;
+  border-radius: 7px;
+  padding: 40px;
+  height: 356px;
+}
+
+.signInGoogleDiv {
+
+}
+
+.signInGoogleImg{
+  padding: 0px; 
+  height: 29px;
+}
+
+.signInGoogleButton {
+  transition-duration: 0.5s;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.41);
+  border-radius: 11px;
+  padding: 5px 15%; 
+}
+
+.signInGoogleButton:hover {
+  background: rgba(245, 245, 245, 0.73);
+}
+
+.signInGoogleButton:focus {
+  outline: 0;
+}
+
+.pushFooter {
+  height: 530px;
+}
+
 #error {
 	color : #ff5050;
 }
@@ -19,4 +65,8 @@
   to {
     transform: scale(1) rotate(360deg);
   }
+}
+
+.form {
+  width: 40%;
 }

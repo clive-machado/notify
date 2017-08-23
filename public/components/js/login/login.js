@@ -20,10 +20,13 @@ module.exports = function (app) {
         GoogleAuth.signIn().then(function(googleUser) {
           clickEvent.onGoogleSignIn(googleUser.Zi.access_token)
           .then(function(data){
-            new PNotify({
+            var notice = new PNotify({
                 title: 'User logged In',
                 type: 'success',
                 animate_speed: 'fast'
+            })
+            notice.get().click(function() {
+              notice.remove()
             })
             $cookies.put('auth', data.application_user.authtoken)
             $cookies.put('uid', data.application_user.uid)
@@ -58,13 +61,14 @@ module.exports = function (app) {
       request(opt, function (err, res, body) {
         if (typeof body == "string"){
           body = JSON.parse(body)
-          if(body.error_message)
+          if(body.error_message){
             new PNotify({
               title: 'Oh No!',
               text: body.error_message,
               type: 'error',
               animate_speed: 'fast'
             });
+          }
           if(body.application_user) {
             new PNotify({
                 title: 'Success!',
@@ -77,6 +81,7 @@ module.exports = function (app) {
             $cookies.put('lname', body.application_user.last_name)
             $cookies.put('email', body.application_user.email)
             $state.go('dashboard')
+            PNotify.removeAll()
           }
           $scope.loginButtonSpin = false
           $scope.$apply()

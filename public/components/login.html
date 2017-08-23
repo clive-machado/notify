@@ -1,38 +1,41 @@
 <div ui-view="navbar"></div>
-<br>
-<br>
-<div class="form login" ng-controller="loginApp">
-<form ng-submit="login()">
-  <div class="form-group">
-    <label for="exampleInputUsername">User Name</label>
-    <input type="text" class="form-control" ng-model="username" placeholder="UserName" required>
+<div class="container-fluid theLoginWrapper">
+  <div class="pushFooter">
+    <br><br>
+    <div class="form login theLoginFormWrapper" ng-controller="loginApp" class="border">
+      <form ng-submit="login()">
+        <div class="text-center signInGoogleDiv">
+          <div> 
+            <button type="button" ng-click="googleLogin()" class="signInGoogleButton">
+              <span id="sigupIcon">
+                <img class="signInGoogleImg" src="/components/img/googleicon.png">
+              </span>
+              <span id="sigupText">
+                <b>Sign In With Google</b>
+              </span>
+              &nbsp
+              <span ng-show="googleButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+            </button>
+          </div>
+        </div>
+        <hr>
+        <div class="form-group">
+          <label for="exampleInputUsername">User Name</label>
+          <input type="text" class="form-control" ng-model="username" placeholder="UserName" required>
+        </div>
+        <div class="form-group">
+          <label for="exampleInputPassword1">Password</label>
+          <input type="password" class="form-control" ng-model="password" placeholder="Password" required>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-success">
+          <span>Login</span>
+          &nbsp
+          <span ng-show="loginButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="form-group">
-    <label for="exampleInputPassword1">Password</label>
-    <input type="password" class="form-control" ng-model="password" placeholder="Password" required>
-  </div>
-  <div>
-    <button type="submit" class="btn btn-success">
-    <span ng-show="loginButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
-    <span>Login</span>
-    </button>
-  </div>
-</form>
-<div class="text-center">
-  <h2>OR</h2>
-  <br>
-  <br>
-  <div> 
-  <button ng-click="googleLogin()">
-    <span id="sigupIcon">
-      <img src="/components/img/googleicon.png">
-    </span>
-    <span id="sigupText">
-      <b>Sign In With Google</b>
-    </span>
-    <span ng-show="googleButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
-  </button>
-  </div>
-</div>
 </div>
 <div ui-view="footer"></div>

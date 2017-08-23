@@ -1,14 +1,16 @@
 <!-- <div ng-controller="dashboard" ></div> -->
 <div ui-view="navbar"></div>
-<div class="text-center" ng-controller="dashboard">
-  <p ng-hide="loggedInAs" style="color: black;">Welcome</p>
-	<h2>{{ title | uppercase }} 
-		<span ng-controller="task" ng-show="updateButtonSpin">
-				<i class="glyphicon glyphicon-refresh spinning"></i>
-				<p > {{ theUpdateText }} </p>
-		</span>
-	</h2> 
-	<div ui-view="task">
+<div class="text-center dashboardWrapper" ng-controller="dashboard">
+  <div class="dashboardInfoPanel">
+	  <p ng-hide="loggedInAs" class="colorWhite">Welcome</p>
+		<h2 class="colorWhite"><i class="fa fa-user-circle"></i> {{ title | uppercase }} 
+			<span ng-controller="task" ng-show="updateButtonSpin">
+					<i class="glyphicon glyphicon-refresh spinning"></i>
+					<p > {{ theUpdateText }} </p>
+			</span>
+		</h2>
+	</div> 
+	<div ui-view="task" class="theTasksWrapper">
 	</div>
 	<hr>
 </div>

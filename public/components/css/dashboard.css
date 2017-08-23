@@ -1,46 +1,97 @@
+.dashboardWrapper{
+  animation: fadein 1s linear;
+}
+
 #theTaskTextEditor {
   border: 0;
-	transition-duration: 0.5s;
 	font-size: 20px;
-	color: white;
-	/*background-color: rgb(38, 255, 255)*/
-	background-color: rgba(38, 255, 255, 0.2)
+	width: 50%;
+}
+
+.dashboardInfoPanel {
+  background: url(/components/img/header.jpg) no-repeat;
+  background-size: cover;	
+  padding-bottom: 20px;
 }
 
 #theTaskTextEditor:focus {
   border: 0;
   outline: 0;
-  border-bottom: 3px solid #ADD8E6; 
+  border-bottom: 1px solid black; 
 }
 
-/*#theTaskDiv {
-	border: 2px solid red;
+.theCheckedTaskUL .strikeElement {
+	text-decoration: line-through;
+	color: lightgrey;
 }
 
-#theTaskRepeatDiv {
-	border: 2px solid yellow;
+.theTasksWrapper{
+	background: rgba(214, 201, 162, 0.19);
+	width: 100%; 
+	min-height: 300px;
 }
-*/
+
+#theTaskRepeatDivOne {
+	/*background: lightgrey;*/
+	width: 50%;
+	margin: auto;
+	margin-top: 2%;
+}
+
+#theTaskRepeatDivTwo{
+	/*background: lightgrey;*/
+	width: 50%;
+	margin: auto;
+	margin-top: 2%;
+}
+
+
 .theTasksUL {
+	animation: slide 1s linear;
 	transition-duration: 0.5s;
 	padding: 0px;
   list-style: none;
+  border-radius: 10px;
+  /*outline: 3px solid rgba(255, 180, 67, 0.6);*/
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+}
+
+@keyframes slide {
+	0% { 
+		opacity: 0;
+		/*transform: translateX(-8%) */
+	}
+	25% { 
+		opacity: 0.2;
+		/*transform: translateX(8%) */
+	}
+	100% { 
+		opacity: 1; 
+		/*transform: translateX(0%);*/
+	}
+}
+
+.theCheckedTaskUL {
+	animation: slide 1s linear;
+	transition-duration: 0.5s;
+	padding: 0px;
+  list-style: none;
+  border-radius: 10px;
+  /*outline: 3px solid rgba(255, 180, 67, 0.6);*/
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.14);
 }
 
 .theTasksLi { 
-	transition-duration: 0.5s;
-	/*border: 1px solid black;*/
+	/*transition-delay: 50s ease-in;*/
 	border-radius: 2px; 	 
-  /*padding: 1%;*/
-	margin: 1%;
-	background-color: rgb(38, 255, 255)
-}
-
-.theTaskLi: hover {
-	/*background-color: solid rgb(38, 255, 255)*/
 }
 
 
+.theTaskLi:hover {
+	background: rgb(38, 255, 255)
+}
 
 /*#theDivInsideLi {
 	border: 2px solid orange; 	
@@ -53,12 +104,11 @@
 
 #theDeleteButtonSpan {
 	float: right;
-/*  padding-bottom: 5px;
-  padding-top: 5px;*/
 }
 
 #theDeleteButton {
 	transition-duration: 0.5s;
+	border-radius: 15px;
 }
 
 #theDeleteButton:hover {
@@ -68,25 +118,31 @@
 #checkBox {
   -webkit-appearance: none;
   background-color: #fafafa;
-	border: 1px solid #cacece;
+	border: 1px solid black;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0px -15px 10px -12px rgba(0,0,0,0.05);
-  margin: 0;
-  padding: 10px;
-	border-radius: 3px;
+  margin: 5px;
+  /*margin-left: 5px;*/
+  margin-bottom: 3px;
+  padding: 10px 10px;
+	border-radius: 9px;	
 	display: inline-block;
 	position: relative;
-	float:left;
+	float:left; 
 }
 
 #checkBox:active, #checkBox:checked:active {
 	box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0px 1px 3px rgba(0,0,0,0.1);
 }
 
+#checkBox:focus{
+	outline: none;
+}
+
 #checkBox:checked {
 	background-color: #e9ecee;
-	border: 1px solid #adb8c0;
+	border: 1px solid lightgreen;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0px -15px 10px -12px rgba(0,0,0,0.05), inset 15px 10px -12px rgba(255,255,255,0.1);
-	color: #99a1a7;
+	color: green;
 }
 
 #checkBox:checked:after {
@@ -100,43 +156,86 @@
 
 #theDivFirstInsideLi {
 	display: inline-block;
-	width:50%;
-	/*border: 1px solid orange;*/
+	width:100%;
+	/*border: 1px lightgrey;*/
 }
 
 .theDivSecondInsideLi {
 	display: inline-block;
 	cursor: move;
-	/*float: right;*/
-	width:30%;
+	float: left;
+	width:10%;
 	height: 32px;
-	/*border: 1px solid yellow;*/
+	border: 1px solid black;
 }
 
 #theAddTaskDiv {
-	transition-duration: 0.5s;
 	border: 0;
-	font-size: 30px;
+	font-size: 18px;
 	display: inline-block;
 	width: 50%;
-	border-bottom: 2px solid lightblue;
+	border-bottom: 2px solid black;
+	opacity: 0.5;
+	background: #f1f3f3; 
+}
+
+#theAddTaskDiv::placeholder{
+	color: rgba(154, 154, 154, 0.8);
 }
 
 #theAddTaskDiv:focus {
 	outline: 0;
-	border-bottom: 6px solid lightblue;
+	border-bottom: 5px solid lightblue;
+	opacity: 1;
 }
 
 #theAddTaskButton {
 	display: inline-block;
-	width: 50%;
+	width: 10%;
+	border-radius: 50px;
+	background:transparent;
+	outline: 0;
+}
+
+#theAddTaskButton.active, #theAddTaskButton:active {
+   -webkit-box-shadow: none; 
+   box-shadow: none;
 }
 
 #theDeleteButton {
 	border: none;
+	background: #fff;
+	color: #ff6e6e;
 }
 
 #theDeleteButton:hover {
 	transition-duration: 0.5s;
-	color: #000000;
+	transform: rotate(360deg);
+	background:transparent;
+}
+
+#theDeleteButton:focus {
+	outline: none;
+}
+
+#clearCheckedSpan {
+	color: rgba(24, 80, 99, 0.97);
+	float: right;
+}
+
+#clearChecked {
+	text-decoration: none;
+}
+
+#clearCheckedSpan:hover {
+	color: rgba(24, 80, 99, 0.6);
+}
+
+.colorWhite {
+	color: white;
+}
+
+h2.colorWhite.ng-binding {
+	margin-top: 0px;
+	margin-bottom: 10px;
 }

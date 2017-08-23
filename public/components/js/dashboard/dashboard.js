@@ -7,23 +7,30 @@ module.exports = function(app) {
 		function ($scope, $state, $rootScope, $cookies) {
 		$scope.navOne = true 
 		$scope.navTwo = false	
+		$scope.loggedInAs = false
 		$scope.navButtonLogout = 'Logout'	
 		$scope.title = $cookies.get('fname') + " " + $cookies.get('lname')
-		$scope.loggedInAs = false
 		$scope.email = $cookies.get('email')
-		$scope.logout = function() {
+		$scope.logout = function() { 
 			$rootScope.array = []
+			$rootScope.checkedArray = [] 
       $cookies.remove('auth')
       $cookies.remove('uid')
       $cookies.remove('fname')
       $cookies.remove('lname')
       $cookies.remove('email')
-      new PNotify({
+      var notice = new PNotify({
         title: 'User Logged out',
         type: 'success',
-        animate_speed: 'fast'
-      });
-			$state.go('login')
+        animate_speed: 'fast',
+	      buttons: {
+	        sticker: true
+	      }
+      })
+      notice.get().click(function() {
+	      notice.remove()
+	    })
+			$state.go('login')	
 		}
     $scope.onDropComplete = function(index, data, evt) {
       var otherObj = $rootScope.array[index]

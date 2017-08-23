@@ -1,12 +1,45 @@
 html, body {
   height: 100%;
   background-color: #fcfffe;
+  animation: fadein 1s linear;
+}
+
+@keyframes fadein {
+  0% { 
+    opacity: 0; 
+  }
+  25% { 
+    opacity: 0.2; 
+  }
+  50% { 
+    opacity: 0.5; 
+  }
+  75% { 
+    opacity: 0.7; 
+  }
+  100% { 
+    opacity: 1; 
+  }
 }
 
 .header-content {
 	background-image: url('.././img/header.jpg');
   background-size: cover;
-	min-height: 560px;
+	min-height: 530px;
+  animation: fadein 1s linear;
+}
+
+#navBar {
+  background: white;
+  box-shadow: 1px 2px 10px rgba(136, 136, 136, 0.3);
+}
+
+.navbar {
+  margin-bottom: 0px;
+}
+
+img#brandIcon {
+  margin-left: 20px;
 }
 
 .navbar-brand {
@@ -77,7 +110,8 @@ input.form-control:focus {
 
 button.btn {
   transition-duration: 0.5s;
-  border-radius: 7px;
+  border-radius: 2px;
+  outline: 0;
   /*background-color: lightgreen;*/
 }
 

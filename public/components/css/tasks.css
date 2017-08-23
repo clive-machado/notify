@@ -1,0 +1,46 @@
+.theTaskAddWrapper {
+
+}
+
+.fa-plus-circle {
+	font-size: 40px;
+	color: rgba(30, 165, 0, 0.6);
+	transition-duration: 0.5s;
+}
+
+.fa-plus-circle:hover {
+	color: rgba(30, 165, 0, 1);
+} 
+
+#theCompletedBtn, #theActiveBtn, #theAllBtn{
+	background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+#theCompletedBtn:focus {
+  border-bottom: 2px solid #3a9fe5;
+}
+
+#theActiveBtn:focus {
+  border-bottom: 2px solid #3a9fe5;
+}
+
+#theAllBtn:focus {
+  border-bottom: 2px solid #3a9fe5;
+}
+
+#theClearCheckedButton {
+	background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+#theClearCheckedButton:hover {
+	border-bottom: 2px solid #3a9fe5;
+	color: rgba(0, 57, 86, 0.78);	
+}
+
+#NoTaskCompleted {
+	
+}

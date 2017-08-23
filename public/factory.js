@@ -4,17 +4,31 @@ var utils = require('../lib/utilities/utils.js')
 module.exports = function (app) {
 	app.factory('getFactory',[ '$rootScope', '$cookies', function ($rootScope, $cookies) {
 		return { 
+			eachTasks : function () {
+
+			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
+						$rootScope.mainPageSpinner = false
 		      	$rootScope.array = []
+		      	$rootScope.checkedArray = []
 			      for(var i=0; i < data.objects.length; i++) {    	
 			      	if($cookies.get('uid') === data.objects[i].user_reference) {
-			      		$rootScope.array.unshift(data.objects[i])
-			      		$rootScope.array.sort(function(a, b) {							  
-								  return new Date(b.created_at) - new Date(a.created_at)
-								})
+			      		if(data.objects[i].status === true){
+			      			$rootScope.checkedArray.unshift(data.objects[i])
+			      			$rootScope.checkedArray.sort(function(a, b) {							  
+								  	return new Date(b.created_at) - new Date(a.created_at)
+									})
+			      		}
+			      		else {
+				      		$rootScope.array.unshift(data.objects[i])
+				      		$rootScope.array.sort(function(a, b) {							  
+									  return new Date(b.created_at) - new Date(a.created_at)
+									})
+			      		}
 			      	}
 			      }
 		      	$rootScope.$apply()
@@ -25,6 +39,10 @@ module.exports = function (app) {
 
 	app.factory('clickEvent', [ '$cookies', 'getFactory', '$rootScope', function($cookies, getFactory, $rootScope) {
     return {
+    	isKeyEnter : function (event) {
+	      if(event.keyCode === 13)
+        	return true
+    	},
     	isLogged : function () {
     		if(angular.isDefined($cookies.get('auth')))
     			return true
@@ -64,7 +82,7 @@ module.exports = function (app) {
 		    	return data
 				})
       },
-      update : function (uid,  body) {
+      update : function (uid,  body, index) {
       	var data = {
       		"object" : body
       	}

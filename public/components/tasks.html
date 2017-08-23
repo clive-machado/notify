@@ -1,19 +1,50 @@
 <div ng-controller="task" id="theTaskDiv"> 
-<br>
+<span ng-show="syncButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i> Syncing...</span>
 <br>	
-	<div>
+	<div class="theTaskAddWrapper">
 		<span>
-			<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" placeholder="Add task here..."> 
-	    <span ng-show="taskButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
-			<br><br>
-			<button id="theAddTaskButton" class="btn btn-success" ng-click="add(inputText)">
-				<span>Add</span>
-			</button>
+			<form>
+				<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" maxlength="10" placeholder="Add task here..."  ng-keydown="keyEnter($event)">
+	    	<span ng-show="taskButtonSpin"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+			</form>
+<!-- 			<button id="theAddTaskButton" class="btn" ng-click="add(inputText)">
+				<span><i class="fa fa-plus-circle" aria-hidden="true"></i></span>
+			</button> -->
 		</span> 
 	</div>
+	<br>
+		<span role="presentation" class="active">
+			<button id="theAllBtn" ng-click="getActiveOrCompleted('')">
+				All
+			</button>
+		</span>
+		<span role="presentation">
+			<button id="theActiveBtn" ng-click="getActiveOrCompleted('hello')">
+				Active
+			</button>
+		</span>
+		<span role="presentation">
+			<button id="theCompletedBtn" ng-click="getActiveOrCompleted('hell')">
+				Completed
+			</button>
+		</span>
 	<hr>
-	<div id="theTaskRepeatDiv">	
-		<ul repeat class="theTasksUL">
-		</ul>
+	<span id="clearCheckedSpan" ng-init="areTheyChecked()" ng-show="isAnyChecked">
+		<button id="theClearCheckedButton" id="clearChecked" ng-click="clearChecked()">
+			<i class="fa fa-trash" aria-hidden="true"></i>
+			Clear Checked
+		</button>
+	</span>
+	<br>
+	<div class="container theTasksWrapper">
+		<h2><span ng-show="mainPageSpinner"><i class="glyphicon glyphicon-refresh spinning"></i></span></h2>
+		<div id="theTaskRepeatDivOne" ng-hide="istheUnCheckedArray">	
+			<ul repeat class="theTasksUL" ng-repeat="arr in array">
+			</ul>
+		</div>
+		<div id="theTaskRepeatDivTwo">
+			<ul repeat class="theCheckedTaskUL" ng-repeat="arr in checkedArray" ng-hide="istheCheckedArray">
+			</ul>
+		</div>
 	</div>
 </div>
