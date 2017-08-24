@@ -4,13 +4,13 @@
 	</div> -->
 	<div id="theDivFirstInsideLi">	
 		<span id="theCheckBoxSpan">
-			<input id="checkBox" type="checkbox" name="taskCheckbox" ng-model="arr.status" ng-change="toCheck(arr.uid, arr.status, arr.task_text, $index)">
+			<input id="checkBox" type="checkbox" name="taskCheckbox" ng-model="arr.status" ng-change="toCheck(arr.uid, arr.status, arr.task_text, $index)" ng-disabled="checkDisable">
 		</span>
 		<span id="theTaskTextEditorSpan">
-			<input id="theTaskTextEditor" class="text-center strikeElement" maxlength="20" type="text" value="{{ arr.task_text }}" ng-model="arr.task_text" ng-blur="makeTaskTextEditor(arr.uid, arr.task_text, $index)"> 
+			<input id="theTaskTextEditor" class="text-center strikeElement" maxlength="20" type="text" value="{{ arr.task_text }}" ng-model="arr.task_text" ng-blur="makeTaskTextEditor(arr.uid, arr.task_text, $index)" ng-keydown="keyEnterUpdate($event, arr.uid, arr.task_text, $index)"> 
 		</span>
 		<span id="theDeleteButtonSpan">
-			<button id="theDeleteButton" class="btn" ng-model="arr.task_text" ng-click="toDeleteTask(arr.uid, arr.task_text)">
+			<button id="theDeleteButton" class="btn" ng-model="arr.task_text" ng-click="toDeleteTask(arr.uid, arr.task_text, $index, arr.status)" ng-disabled="deleteDisabled">
 				<i class="fa fa-trash"></i>
 			</button> 
 		</span>	

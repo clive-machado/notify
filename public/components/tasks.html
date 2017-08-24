@@ -4,7 +4,7 @@
 	<div class="theTaskAddWrapper">
 		<span>
 			<form>
-				<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" maxlength="20" placeholder="Add task here..."  ng-keydown="keyEnter($event)">
+				<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" maxlength="20" placeholder="Add task here..."  ng-keydown="keyEnter($event)" ng-disabled="addDisable">
 	    	<span ng-show="taskButtonSpin"><i class="fa fa-spinner spinning"></i></span>
 			</form>
 <!-- 			<button id="theAddTaskButton" class="btn" ng-click="add(inputText)">
@@ -25,26 +25,33 @@
 	</span>
 	<span role="presentation">
 		<button id="theCompletedBtn" ng-click="getActiveOrCompleted('hell')">
-			Completed
+			Done
 		</button>
 	</span>
+	<hr>
 	<br>
 	<span id="uncheckAllSpan">
-		<button id="theUncheckAllButton"  class="checkButtons" id="uncheckAll" ng-click="uncheckAll()">
+		<button id="theUncheckAllButton"  class="checkButtons floatRight" ng-click="uncheckAll()" ng-disabled="allIncompleteDisabled" >
 			<i class="fa fa-square-o" aria-hidden="true"></i>
 			Mark All Incomplete
 		</button>
 	</span>
-	<span id="checkAllSpan">
-		<button id="theCheckAllButton"  class="checkButtons" id="checkAll" ng-click="checkAll()">
+	<span id="checkAllSpan" ng-init="CompleteInit()">
+		<button id="theCheckAllButton" class="checkButtons floatRight"  ng-disabled="allCompleteDisabled" ng-click="checkAll()">
 			<i class="fa fa-check-square-o" aria-hidden="true"></i>
 			Mark All Complete
 		</button>
 	</span>
 	<span id="clearCheckedSpan">
-		<button id="theClearCheckedButton" class="checkButtons" id="clearChecked" ng-click="clearChecked()">
+		<button id="theClearCheckedButton" class="checkButtons floatLeft" ng-click="clearChecked()" ng-disabled="clearCheckDisabled" >
 			<i class="fa fa-trash" aria-hidden="true"></i>
 			Clear Checked
+		</button>
+	</span>
+	<span id="reloadButtonSpan">
+		<button id="theReloadButton" class="checkButtons floatLeft" ng-click="reload()">
+			<i class="fa fa-refresh {{ spin }}" aria-hidden="true"></i>
+			Refresh
 		</button>
 	</span>
 	<br>
@@ -60,3 +67,10 @@
 		</div>
 	</div>
 </div>
+
+
+<!-- ng-show="clearCheckShow"
+ng-show="allCompleteShow"
+ng-show="allIncompleteShow"
+ng-init="IncompleteInit()"
+ -->

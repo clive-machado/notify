@@ -11,10 +11,12 @@ module.exports = function (app) {
 					if(body.status === true){
 						$rootScope.array.splice(index, 1)
 						$rootScope.checkedArray.splice(0, 0, data.object)
+						$rootScope.$apply()
 					}
 					if(body.status === false){
 						$rootScope.checkedArray.splice(index, 1)	
 						$rootScope.array.splice(0, 0, data.object)
+						$rootScope.$apply()
 					}
     			$rootScope.checkedArray.sort(function(a, b) {							  
 				  	return new Date(b.created_at) - new Date(a.created_at)
@@ -32,6 +34,7 @@ module.exports = function (app) {
 		      .then(function(data) {
 		      	$rootScope.array = []
 		      	$rootScope.checkedArray = []
+        		$rootScope.spin = ""
 			      for(var i=0; i < data.objects.length; i++) {    	
 			      	if($cookies.get('uid') === data.objects[i].user_reference) {
 			      		if(data.objects[i].status === true){
@@ -95,7 +98,6 @@ module.exports = function (app) {
 				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
       	return rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'DELETE', utils.getHeaders(), null)
 		    .then(function(data){     	
-		    	getFactory.tasks()
 		    	return data
 				})
       },

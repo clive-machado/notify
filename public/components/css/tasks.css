@@ -34,7 +34,6 @@
 	background: transparent;
   border: 0;
   outline: 0;
-  float: right;
 }
 
 .checkButtons:hover {
@@ -47,3 +46,10 @@
 	color: lightgrey;
 }
 
+.floatLeft {
+	float: left;
+}
+
+.floatRight {
+  float: right;
+}
