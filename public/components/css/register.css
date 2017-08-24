@@ -1,3 +1,17 @@
 .registerWrapper {
   animation: fadein 1s linear;
+  background: url(/components/img/register.jpg) no-repeat center;
+  background-size: cover; 
+}
+
+.registerForm {
+	background: white;
+  padding: 2%; 
+  margin-top: 9px;
+  margin-bottom: 15px;
+  border-radius: 7px;
+}
+
+.form-control {
+	height: 30px;
 }

@@ -2,4 +2,16 @@
 	#theTaskRepeatDivOne, #theTaskRepeatDivTwo, .form {
 		width: 90%;
 	}
+
+}
+
+@media only screen and (max-width: 425px) {
+	h1#homeHeading {
+	 	font-size: 50px;
+	 	font-weight: 500; 
+	}
+	
+	p {
+     padding-top: 0px; 
+	}
 }

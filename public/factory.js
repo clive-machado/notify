@@ -29,7 +29,6 @@ module.exports = function (app) {
 			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
-					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
 		      	$rootScope.array = []

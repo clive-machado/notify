@@ -7,9 +7,6 @@
 				<input id="theAddTaskDiv" type="text" name="addTask" ng-model="inputText" maxlength="20" placeholder="Add task here..."  ng-keydown="keyEnter($event)" ng-disabled="addDisable">
 	    	<span ng-show="taskButtonSpin"><i class="fa fa-spinner spinning"></i></span>
 			</form>
-<!-- 			<button id="theAddTaskButton" class="btn" ng-click="add(inputText)">
-				<span><i class="fa fa-plus-circle" aria-hidden="true"></i></span>
-			</button> -->
 		</span> 
 	</div>
 	<br>
@@ -19,12 +16,12 @@
 		</button>
 	</span>
 	<span role="presentation">
-		<button id="theActiveBtn" ng-click="getActiveOrCompleted('hello')">
+		<button id="theActiveBtn" ng-click="getActiveOrCompleted('done')">
 			Active
 		</button>
 	</span>
 	<span role="presentation">
-		<button id="theCompletedBtn" ng-click="getActiveOrCompleted('hell')">
+		<button id="theCompletedBtn" ng-click="getActiveOrCompleted('notDone')">
 			Done
 		</button>
 	</span>
@@ -36,7 +33,7 @@
 			Mark All Incomplete
 		</button>
 	</span>
-	<span id="checkAllSpan" ng-init="CompleteInit()">
+	<span id="checkAllSpan">
 		<button id="theCheckAllButton" class="checkButtons floatRight"  ng-disabled="allCompleteDisabled" ng-click="checkAll()">
 			<i class="fa fa-check-square-o" aria-hidden="true"></i>
 			Mark All Complete
@@ -67,10 +64,3 @@
 		</div>
 	</div>
 </div>
-
-
-<!-- ng-show="clearCheckShow"
-ng-show="allCompleteShow"
-ng-show="allIncompleteShow"
-ng-init="IncompleteInit()"
- -->

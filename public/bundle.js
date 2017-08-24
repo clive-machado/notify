@@ -108439,46 +108439,10 @@ module.exports = function (app) {
     'getFactory',
     '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout, $stateParams, getFactory, $timeout) {
-      var userClicks = 0
-      // $scope.allCompleteShow = true 
-
-      // $scope.CompleteInit = function () {
-      //   // getFactory.tasks()
-      //   $timeout(function() {
-      //     console.log('check array', $rootScope.checkedArray);
-      //     if(angular.isDefined($rootScope.checkedArray)){
-      //       if($rootScope.checkedArray.length >= 0){
-      //         $scope.allCompleteShow = true
-      //       }
-      //       else {
-      //         $scope.allCompleteShow = false
-      //       }
-      //     }
-      //     else {
-      //       $scope.allCompleteShow = false
-      //     }
-      //   }, 2000);
-      // }
-
-      // $scope.IncompleteInit = function () {
-      //   // getFactory.tasks()
-      //   $timeout(function() {
-      //     console.log('array', $rootScope.array);
-      //     if(angular.isDefined($rootScope.array)){
-      //       if($rootScope.array.length >= 0){
-      //         $scope.allIncompleteShow = true
-      //         console.log('in arr', $scope.allIncompleteShow);
-      //       }
-      //       else {
-      //         $scope.allIncompleteShow = false
-      //       }
-      //     }
-      //     else {
-      //       $scope.allIncompleteShow = false
-      //     }
-      //   }, 2000);
-      // }
-
+      
+      /**
+       * Refresh Button
+       */
       $scope.reload = function () {
         $state.transitionTo($state.current, $stateParams, {
           reload: true,
@@ -108488,53 +108452,28 @@ module.exports = function (app) {
         $rootScope.spin = "spinning"
       }
 
-
-      // $scope.areTheyChecked = function () {
-      //   var checkedArr = $rootScope.checkedArray
-      //   $scope.emptyMessage = true
-      //   if(angular.isDefined(checkedArr)) {
-      //     if(checkedArr.length <= 0 ){
-      //       $scope.isAnyChecked = false
-      //     }
-      //     if(checkedArr.length >= 1 ){
-      //       $scope.isAnyChecked = true
-      //     }
-      //   }
-      //   if(angular.isUndefined(checkedArr)) {
-      //       $scope.isAnyChecked = false
-      //   }
-      // }
-
-      $scope.getActiveOrCompleted = function (param) {
-        if(param === 'hello') {
-          $scope.istheCheckedArray = true
-          $scope.istheUnCheckedArray = false
-        }
-        if(param === 'hell') {
-          $scope.istheUnCheckedArray = true
-          $scope.istheCheckedArray = false
-        }
-        if(param === '') {
-          $scope.istheUnCheckedArray = false
-          $scope.istheCheckedArray = false
-        }
-      }
-
+      /**
+       * Enter Key to Add Task
+       */
       $scope.keyEnter = function (event) {
         if(clickEvent.isKeyEnter(event) === true)
           $scope.add($scope.inputText)
       }
 
+      /**
+       * Currently Not in Use
+       */
       $scope.keyEnterUpdate = function (event, uid, text, index) {
         if(clickEvent.isKeyEnter(event) === true)
           $scope.makeTaskTextEditor(uid, text, index)
       }
 
+      /**
+       * Check all Tasks Button
+       */
       $scope.checkAll = function () {
-        // $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")
         $scope.allCompleteDisabled = true
         $scope.syncButtonSpin = true
-        // $scope.allCompleteShow = false 
         if($rootScope.array.length <= 0){
           $scope.allCompleteDisabled = true
           $scope.syncButtonSpin = false  
@@ -108542,24 +108481,12 @@ module.exports = function (app) {
         for(var i = 0; i < $rootScope.array.length; i++) {
           $scope.toCheck($rootScope.array[i].uid, true, $rootScope.array[i].task_text, null, true)
         }
-        // var isUserLogged = clickEvent.isLogged()
-        // if(isUserLogged === true) {
-        //   var body = {
-        //     "status" : status
-        //   }            
-        //   $scope.onUpdateCall(uid, body, index)
-        //   .then(function(data) {
-
-        //   })
-        // }
-        // else {
-        //   $scope.notify.noteTemplate("Error!", "Could not save, maybe you Logged out?", "error", "fa fa-fa-exclamation-triangle")
-        //   $state.go('login')
-        // }
       }
 
+      /**
+       * UnCheck all Tasks Button
+      */
       $scope.uncheckAll = function () {
-       // $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning")
         $scope.allIncompleteDisabled = true
         $scope.syncButtonSpin = true
         if($rootScope.checkedArray.length <= 0){
@@ -108577,23 +108504,19 @@ module.exports = function (app) {
           var body = {
             "status" : status
           }
-          // $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning") 
           var userClick = 0
           $scope.checkDisable = true
           if(userClick <= 0 || checkAll === true) { 
             userClick++
             $scope.onUpdateCall(uid, body, index)
             .then(function(data) {
-              console.log($rootScope.array.length, "length")
               if(($rootScope.array.length < 0 === false) && checkAll === true){
                 $scope.allCompleteDisabled = false
                 $scope.allCompleteShow = true 
-                // $scope.notify.noteTemplate("All Tasks Completed", task, "info", "fa fa-flag-checkered")
                 $scope.syncButtonSpin = false    
               }
               if(($rootScope.checkedArray.length < 0 === false) && checkAll === true){
                 $scope.allIncompleteDisabled = false
-                // $scope.notify.noteTemplate("Task All Unchecked", task, "info", "fa fa-times")
                 $scope.syncButtonSpin = false    
               }
               $scope.syncButtonSpin = false      
@@ -108614,8 +108537,6 @@ module.exports = function (app) {
       }
 
       $scope.clearChecked = function() {
-        // $scope.notify.noteTemplate("Syncing ...", "", "", "fa fa-spinner spinning") 
-        // $scope.clearCheckDisabled = true
         if(angular.isDefined($rootScope.checkedArray.length)){   
           var isUserLogged = clickEvent.isLogged()
           if(isUserLogged === true) {
@@ -108783,24 +108704,6 @@ module.exports = function (app) {
       templateUrl: '/components/repeat.html'
     }
   })
-
-
-  app.directive('ngEnter', function () {
-    return function () {
-      
-    }
-    // return function (scope, element, attrs) {
-    //     element.bind("keydown keypress", function (event) {
-    //         if(event.which === 13) {
-    //           scope.$apply(function (){
-    //               scope.$eval(attrs.myEnter)
-    //           })
-    //           event.preventDefault()
-    //         }
-    //     })
-    // }
-  })
-
 }
 },{}],361:[function(require,module,exports){
 module.exports = function (app) {
@@ -108985,7 +108888,6 @@ module.exports = function (app) {
 			},
 				tasks : function () {
 					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
-					// $rootScope.mainPageSpinner = true
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
 		      	$rootScope.array = []
