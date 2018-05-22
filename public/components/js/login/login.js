@@ -7,7 +7,8 @@ module.exports = function (app) {
     '$rootScope', 
     '$cookies', 
     'clickEvent', 
-    function($scope, $state, $rootScope, $cookies, clickEvent) {		
+    '$timeout',
+    function($scope, $state, $rootScope, $cookies, clickEvent, $timeout) {		
     $scope.username
     $scope.password
     gapi.load('auth2', function() {
@@ -17,6 +18,9 @@ module.exports = function (app) {
         var GoogleAuth  = gapi.auth2.getAuthInstance()
         $scope.googleLogin = function () {
         $scope.googleButtonSpin = true
+        $timeout(function(){
+          $scope.googleButtonSpin = false;
+        }, 2000);
         GoogleAuth.signIn().then(function(googleUser) {
           clickEvent.onGoogleSignIn(googleUser.Zi.access_token)
           .then(function(data){
@@ -33,7 +37,7 @@ module.exports = function (app) {
             $cookies.put('fname', data.application_user.auth_data.google.user_profile.given_name)
             $cookies.put('lname', data.application_user.auth_data.google.user_profile.family_name)
             $cookies.put('email', data.application_user.email)
-            $scope.spinning = false
+            $scope.googleButtonSpin = false
             $scope.$apply()
             $state.go('dashboard')
           })

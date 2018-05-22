@@ -1,11 +1,12 @@
-var rest = require('../lib/utilities/restfullservice.js')
-var utils = require('../lib/utilities/utils.js')
+var rest 			= require('../lib/utilities/restfullservice.js');
+var utils 		= require('../lib/utilities/utils.js');
+var uiConfig 	= require('./ui-config.json');
 
 module.exports = function (app) {
 	app.factory('getFactory',[ '$rootScope', '$cookies', function ($rootScope, $cookies) {
 		return { 
 			eachCheckTasks : function (index, body, uid) {
-				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('application_api_key', uiConfig.application_api_key)
 				rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'GET', utils.getHeaders(), null)
 	      .then(function(data) {
 					if(body.status === true){
@@ -28,7 +29,7 @@ module.exports = function (app) {
 				})
 			},
 				tasks : function () {
-					utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+					utils.setHeader('application_api_key',uiConfig.application_api_key)
 					rest.restfullService(utils.getUrl('/classes/tasks/objects'), 'GET', utils.getHeaders(), null)
 		      .then(function(data) {
 		      	$rootScope.array = []
@@ -70,7 +71,7 @@ module.exports = function (app) {
       	$rootScope.button = true	
       }, 
       activate : function (token, uid) {
-      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+      	utils.setHeader('application_api_key',uiConfig.application_api_key)
 				utils.setHeader('content-type','application/json')
 				return rest.restfullService(utils.getUrl('/application/users/' + uid + '/activate/' + token), 'GET', utils.getHeaders(), null)
 		    .then(function(data){     	
@@ -78,7 +79,7 @@ module.exports = function (app) {
 				})
       },
       add : function (usertext) {
-				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('application_api_key',uiConfig.application_api_key)
 				utils.setHeader('content-type','application/json')
 				var data = {
 					object :  {
@@ -94,7 +95,7 @@ module.exports = function (app) {
 				})
       },
       delete : function (uid) {      	
-				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('application_api_key',uiConfig.application_api_key)
       	return rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'DELETE', utils.getHeaders(), null)
 		    .then(function(data){     	
 		    	return data
@@ -104,7 +105,7 @@ module.exports = function (app) {
       	var data = {
       		"object" : body
       	}
-				utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+				utils.setHeader('application_api_key',uiConfig.application_api_key)
 		   	return new Promise (function (resolve, reject) {
 	      	rest.restfullService(utils.getUrl('/classes/tasks/objects/' + uid), 'PUT', utils.getHeaders(), data)
 			    .then(function(data){  
@@ -126,7 +127,7 @@ module.exports = function (app) {
 		        "password_confirmation": user.confirm_password
     			}
       	}
-      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+      	utils.setHeader('application_api_key',uiConfig.application_api_key)
 				utils.setHeader('content-type','application/json')
       	return new Promise (function (resolve, reject) {
 	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)
@@ -145,7 +146,7 @@ module.exports = function (app) {
           	}
       		}
       	}
-      	utils.setHeader('application_api_key','bltf3d1aceb32d4fb7a')
+      	utils.setHeader('application_api_key',uiConfig.application_api_key)
 				utils.setHeader('content-type','application/json')
       	return new Promise (function (resolve, reject) {
 	      	rest.restfullService(utils.getUrl('/application/users'), 'POST', utils.getHeaders(), data)

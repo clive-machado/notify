@@ -10,18 +10,18 @@
 		</span> 
 	</div>
 	<br>
-	<span role="presentation" class="active">
-		<button id="theAllBtn" ng-click="getActiveOrCompleted('')">
+	<span role="presentation">
+		<button id="theAllBtn" ng-class="{ 'active-tab' : displayChecked === ''}" ng-click="getActiveOrCompleted('')">
 			All
 		</button>
 	</span>
 	<span role="presentation">
-		<button id="theActiveBtn" ng-click="getActiveOrCompleted('done')">
+		<button id="theActiveBtn" ng-class="{ 'active-tab' : displayChecked === 'notDone'}" ng-click="getActiveOrCompleted('notDone')">
 			Active
 		</button>
 	</span>
 	<span role="presentation">
-		<button id="theCompletedBtn" ng-click="getActiveOrCompleted('notDone')">
+		<button id="theCompletedBtn" ng-class="{ 'active-tab' : displayChecked === 'done'}" ng-click="getActiveOrCompleted('done')">
 			Done
 		</button>
 	</span>
@@ -54,13 +54,22 @@
 	<br>
 	<div class="container theTasksWrapper">
 		<h2><span ng-show="mainPageSpinner"><i class="glyphicon glyphicon-refresh spinning"></i></span></h2>
-		<div id="theTaskRepeatDivOne" ng-hide="istheUnCheckedArray">	
+		<div id="theTaskRepeatDivOne" ng-show="displayChecked === 'notDone' || displayChecked === ''">
 			<ul repeat class="theTasksUL" ng-repeat="arr in array">
 			</ul>
+			<div class="empty-task-message" ng-show="!array.length && displayChecked != ''? true : false">
+				<p>No active tasks found</p>
+			</div>
 		</div>
-		<div id="theTaskRepeatDivTwo">
-			<ul repeat class="theCheckedTaskUL" ng-repeat="arr in checkedArray" ng-hide="istheCheckedArray">
+		<div id="theTaskRepeatDivTwo" ng-show="displayChecked === 'done' || displayChecked === ''">
+			<ul repeat class="theCheckedTaskUL" ng-repeat="arr in checkedArray" >
 			</ul>
+			<div class="empty-task-message" ng-show="!checkedArray.length && displayChecked != ''? true : false">
+				<p>No completed tasks found</p>
+			</div>
+		</div>
+		<div class="empty-task-message" ng-show="displayChecked === '' && !array.length && !checkedArray.length">
+			<p>No tasks found</p>
 		</div>
 	</div>
 </div>

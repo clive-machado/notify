@@ -11,6 +11,8 @@ module.exports = function (app) {
     '$timeout',
     function ($scope, $state, $rootScope, clickEvent, $cookies, $timeout, $stateParams, getFactory, $timeout) {
       
+      $scope.displayChecked = '';
+      
       /**
        * Refresh Button
        */
@@ -52,6 +54,10 @@ module.exports = function (app) {
         for(var i = 0; i < $rootScope.array.length; i++) {
           $scope.toCheck($rootScope.array[i].uid, true, $rootScope.array[i].task_text, null, true)
         }
+      }
+
+      $scope.getActiveOrCompleted = function (param) {
+        $scope.displayChecked = param; 
       }
 
       /**
@@ -142,9 +148,9 @@ module.exports = function (app) {
       }
 
       $scope.toDeleteTask = function (uid, task, index, status) {
+        var userClick = 0        
         var isUserLogged = clickEvent.isLogged()
         if(isUserLogged === true) {
-          var userClick = 0
           if(userClick <= 0) { 
             userClick++
             $scope.deleteDisabled = true
@@ -243,7 +249,8 @@ module.exports = function (app) {
     
       $scope.notify = {
         noteTemplate : function (noteTitle, noteText, noteType, noteIcon) {
-          if (userClicks < 4) {
+          var userClick = 0          
+          if (userClick < 4) {
             var notice = new PNotify({
               title: noteTitle,
               text: noteText,
@@ -260,10 +267,10 @@ module.exports = function (app) {
             $timeout(function() {
               PNotify.removeAll()
             }, 1000)
-            userClicks++
+            userClick++
           }
           else {
-            userClicks = 0   
+            userClick = 0   
             PNotify.removeAll()
           }
         }

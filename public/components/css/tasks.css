@@ -18,7 +18,10 @@
   outline: 0;
 }
 
-#theCompletedBtn:focus {
+#theCompletedBtn:hover, #theActiveBtn:hover, #theAllBtn:hover {
+  border-bottom: 2px solid #3a9fe5;	
+}
+/* #theCompletedBtn:focus {
   border-bottom: 2px solid #3a9fe5;
 }
 
@@ -28,6 +31,10 @@
 
 #theAllBtn:focus {
   border-bottom: 2px solid #3a9fe5;
+} */
+
+.active-tab {
+  border-bottom: 2px solid #3a9fe5 !important;	
 }
 
 .checkButtons {
@@ -52,4 +59,8 @@
 
 .floatRight {
   float: right;
+}
+
+.empty-task-message p{
+	color:black;
 }
