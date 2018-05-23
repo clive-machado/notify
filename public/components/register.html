@@ -27,7 +27,7 @@
 		    <input type="password" class="form-control" ng-model="user.confirm_password" placeholder="Same password again you dummy!" required>
 		  </div>
 		  <div>
-		    <button type="submit" class="btn btn-success">
+		    <button type="submit" class="btn btn-success" ng-disabled="registerButtonSpin">
 		    	<span ng-show="registerButtonSpin"><i class="fa fa-spinner spinning"></i></span>
 		    	<span>Register</span>
 		    </button>

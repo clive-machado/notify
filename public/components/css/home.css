@@ -125,6 +125,12 @@ button.btn:hover {
   transition-duration: 0.5s;
 }
 
-#title:hover {
+/* #title:hover {
   color: 
+} */
+
+.disable-element {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

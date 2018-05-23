@@ -11,6 +11,8 @@ module.exports = function (app) {
     function($scope, $state, $rootScope, $cookies, clickEvent, $timeout) {		
     $scope.username
     $scope.password
+    $scope.googleButtonSpin   = false;
+    $scope.loginButtonSpin    = false;
     gapi.load('auth2', function() {
       gapi.auth2.init({
           client_id: '741864869914-3sf0kb9c4nkhoju2asmh00f4cce7omrr.apps.googleusercontent.com'
