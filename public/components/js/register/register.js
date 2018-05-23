@@ -46,11 +46,11 @@ module.exports = function (app) {
             })
           }
           $scope.user = {
-            // username: '',
+            username: '',
             password: '',
             confirm_password: '',
-            // fname : '',
-            // lname: ''
+            fname : '',
+            lname: ''
           }
           $scope.registerButtonSpin = false
           $scope.$apply()
